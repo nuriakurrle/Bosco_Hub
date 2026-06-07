@@ -1,16 +1,16 @@
--- db/seed.sql — Datos de demostración para el dashboard.
--- Son los mismos ejemplos en alemán del prototipo de diseño, cargados en la
--- tabla `inquiries` para poder ver el dashboard poblado sin enviar emails reales.
+-- db/seed.sql — Demo data for the dashboard.
+-- These are the same German sample inquiries from the design prototype, loaded into
+-- the `inquiries` table so the dashboard can be seen populated without real emails.
 --
--- Ejecutar:
+-- Run:
 --   PGPASSWORD=zuk_prototype_2026 psql -h localhost -p 5434 -U zuk -d zuk -f db/seed.sql
 --
--- Vuelve a empezar de cero (borra solo las inquiries de demo):
+-- Start over (deletes only the demo inquiries):
 --   DELETE FROM inquiries WHERE conversation_id LIKE 'demo-%';
 
 DELETE FROM inquiries WHERE conversation_id LIKE 'demo-%';
 
--- 1) Llamada — Pfarrjugend St. Michael (Sommerfreizeit, lista para revisar)
+-- 1) Phone call — Pfarrjugend St. Michael (Sommerfreizeit, ready for review)
 INSERT INTO inquiries
   (received_at, channel, tracker_status, responsible_area, customer_email,
    original_subject, conversation_id, school_name, contact_person, program_type,
@@ -24,7 +24,7 @@ VALUES
    '', FALSE, '', 'Telefonische Anfrage für eine Sommerfreizeit, 28 Jugendliche, Vollpension.',
    E'DB: Don Bosco Buchungsbüro, guten Morgen.\nAnrufer: Guten Morgen, hier ist Lukas Brunner von der Pfarrjugend St. Michael in Augsburg.\nAnrufer: Wir würden gern eine Sommerfreizeit machen, vom zwölften bis siebzehnten Juli.\nDB: Sehr schön. Für wie viele Personen?\nAnrufer: Wir wären 28 Jugendliche und 3 Begleitpersonen.\nDB: Und Verpflegung?\nAnrufer: Vollpension wäre super. Vegetarier muss ich noch nachfragen.');
 
--- 2) E-Mail con 4 reservas — Realschule Bruckmühl (misma conversación)
+-- 2) Email with 4 bookings — Realschule Bruckmühl (same conversation)
 INSERT INTO inquiries
   (received_at, channel, tracker_status, responsible_area, customer_email,
    original_subject, conversation_id, school_name, contact_person, program_type,
@@ -53,7 +53,7 @@ VALUES
    'Jugendherberge', '18.02.2026–20.02.2026', '28 + 2', '9b', 'Vollpension',
    '', 'Klasse 9b.', E'(siehe Sammelmail Realschule Bruckmühl)');
 
--- 3) Llamada incompleta — Schule unbekannt (faltan datos)
+-- 3) Incomplete call — Schule unbekannt (missing data)
 INSERT INTO inquiries
   (received_at, channel, tracker_status, responsible_area, customer_email,
    original_subject, conversation_id, school_name, contact_person, program_type,
@@ -67,7 +67,7 @@ VALUES
    'school_name, number_of_people', 'Unklare Anfrage, Schule und Personenzahl fehlen.',
    E'DB: Don Bosco Buchungsbüro, guten Tag.\nAnrufer: Hallo, ich bin Max Mustermann. Wir würden gern mal im Sommer vorbeikommen.\nDB: Gern. Um welche Gruppe oder Schule handelt es sich?\nAnrufer: Ach, das sage ich Ihnen später, ich muss los — ich melde mich nochmal.');
 
--- 4) E-Mail — Gymnasium Holzkirchen (Orientierungstage, asignada a Andrea)
+-- 4) Email — Gymnasium Holzkirchen (Orientierungstage, assigned to Andrea)
 INSERT INTO inquiries
   (received_at, channel, tracker_status, responsible_area, customer_email,
    original_subject, conversation_id, school_name, contact_person, program_type,
@@ -81,7 +81,7 @@ VALUES
    '', 'andrea', 'Orientierungstage im Herbst für zwei 9. Klassen.',
    E'Hallo zusammen,\n\nwir sind eine 9. Jahrgangsstufe und interessieren uns für Orientierungstage im Herbst, am liebsten Mitte Oktober. Es wären rund 60 Schüler in zwei Klassen.\n\nKönnen Sie uns mögliche Termine nennen?\n\nBeste Grüße\nThomas Wieland');
 
--- 5) Llamada — KJG Sankt Anna (Schulungswochenende, asignada a Andrea)
+-- 5) Phone call — KJG Sankt Anna (Schulungswochenende, assigned to Andrea)
 INSERT INTO inquiries
   (received_at, channel, tracker_status, responsible_area, customer_email,
    original_subject, conversation_id, school_name, contact_person, program_type,
@@ -95,7 +95,7 @@ VALUES
    '', 'andrea', 'Schulungswochenende, 22 Personen, Vollpension + Seminarraum.',
    E'DB: Don Bosco Buchungsbüro.\nAnrufer: Hallo, Theresa Aigner von der KJG Sankt Anna. Wir bräuchten ein Schulungswochenende.\nAnrufer: Vom 3. bis 7. August, wir sind 22 Personen.\nDB: Verpflegung?\nAnrufer: Vollpension, bitte. Einen Seminarraum bräuchten wir auch.');
 
--- 6) E-Mail — Mittelschule Miesbach (¡datos sensibles: alergia!)
+-- 6) Email — Mittelschule Miesbach (sensitive data: allergy!)
 INSERT INTO inquiries
   (received_at, channel, tracker_status, responsible_area, customer_email,
    original_subject, conversation_id, school_name, contact_person, program_type,

@@ -1,12 +1,12 @@
-// app/page.js — Página principal: el Team-Posteingang.
-// Server Component: lee Postgres (inquiries + equipo) y pasa todo a los
-// componentes cliente.
+// app/page.js — Main page: the Team-Posteingang.
+// Server Component: reads Postgres (inquiries + team) and passes everything to
+// the client components.
 import Header from "@/components/Header";
 import Inbox from "@/components/Inbox";
 import { getInquiries } from "@/lib/inquiries";
 import { getStaff, getCurrentUser } from "@/lib/staff";
 
-export const dynamic = "force-dynamic"; // siempre fresco
+export const dynamic = "force-dynamic"; // always fresh
 
 export default async function Home() {
   let items = [];

@@ -1,8 +1,8 @@
 "use client";
-// components/SplitDetail.js — Una E-Mail que contiene varias reservas.
-// n8n parte la email en varias filas (mismo conversationId); aquí las mostramos
-// juntas. La verificación de disponibilidad (Platz frei / eng / voll) llega en v2
-// cuando conectemos las tablas rooms/bookings, así que de momento es neutral.
+// components/SplitDetail.js — One email containing several bookings.
+// n8n splits the email into several rows (same conversationId); here we show them
+// together. The availability check (Platz frei / eng / voll) comes in v2 once we
+// connect the rooms/bookings tables, so for now it stays neutral.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
@@ -94,9 +94,9 @@ export default function SplitDetail({ items, staff = [], me }) {
         </span>
       </div>
 
-      {/* cuerpo split */}
+      {/* split body */}
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        {/* izquierda: email */}
+        {/* left: email */}
         <section className="db-scroll" style={{ flex: "1 1 44%", minWidth: 0, padding: 22, borderRight: "1px solid var(--db-line)" }}>
           <Card title="E-Mail" kicker={primary.receivedAbs}>
             <p style={{ fontFamily: "var(--db-font-mono)", fontSize: 11, color: "var(--db-text-faint)", marginTop: 0 }}>
@@ -123,7 +123,7 @@ export default function SplitDetail({ items, staff = [], me }) {
           </div>
         </section>
 
-        {/* derecha: requests */}
+        {/* right: requests */}
         <section style={{ flex: "1 1 56%", minWidth: 0, display: "flex", flexDirection: "column", background: "var(--db-paper)" }}>
           <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <div className="db-card-title">Erkannte Anfragen · {items.length}</div>

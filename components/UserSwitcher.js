@@ -1,7 +1,7 @@
 "use client";
-// components/UserSwitcher.js — Selector simple de "quién soy" en la barra superior.
-// Guarda la elección en una cookie (`zuk_me`) y recarga para que el servidor la lea.
-// Sin contraseñas (herramienta interna). Más adelante se puede cambiar por login real.
+// components/UserSwitcher.js — Simple "who am I" picker in the top bar.
+// Stores the choice in a cookie (`zuk_me`) and reloads so the server reads it.
+// No passwords (internal tool). Can be swapped for a real login later.
 import { useState } from "react";
 
 export default function UserSwitcher({ staff = [], me }) {
@@ -27,7 +27,7 @@ export default function UserSwitcher({ staff = [], me }) {
       </button>
       {open && (
         <>
-          {/* clic fuera para cerrar */}
+          {/* click outside to close */}
           <div
             onClick={() => setOpen(false)}
             style={{ position: "fixed", inset: 0, zIndex: 55 }}

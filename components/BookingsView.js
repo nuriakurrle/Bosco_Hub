@@ -1,5 +1,5 @@
-// components/BookingsView.js — Lista de reservas creadas, agrupadas por casa.
-// (Hausmanager) Aquí "aterrizan" las reservas tras darle "Buchung anlegen".
+// components/BookingsView.js — List of created bookings, grouped by house.
+// (Hausmanager) This is where bookings "land" after clicking "Buchung anlegen".
 import Link from "next/link";
 import { Icon, I } from "@/components/icons";
 import { Pill } from "@/components/ui";

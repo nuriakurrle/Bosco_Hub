@@ -1,5 +1,5 @@
-// components/icons.js — Iconos SVG de trazo simple (portado de shared.jsx).
-// Un solo color vía currentColor; el tamaño y grosor se pasan por props.
+// components/icons.js — Simple stroke SVG icons (ported from shared.jsx).
+// Single color via currentColor; size and stroke width passed as props.
 
 export const Icon = ({ d, size = 14, stroke = 1.6, fill = "none", style }) => (
   <svg

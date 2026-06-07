@@ -21,8 +21,8 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,wght@0,400;0,500;1,400&display=swap"
         />
       </head>
-      {/* suppressHydrationWarning: extensiones (Grammarly, ColorZilla…) inyectan
-          atributos en <body> antes de que React cargue; esto evita el falso error. */}
+      {/* suppressHydrationWarning: extensions (Grammarly, ColorZilla…) inject
+          attributes into <body> before React loads; this avoids the false error. */}
       <body suppressHydrationWarning>{children}</body>
     </html>
   );

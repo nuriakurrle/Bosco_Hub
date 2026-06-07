@@ -1,7 +1,7 @@
 "use client";
-// components/ConfirmationPanel.js — Confirmación al cliente (human-in-the-loop).
-// Muestra un borrador editable (Para/Betreff/Nachricht) y lo envía vía la API,
-// que a su vez dispara el webhook de n8n → Outlook.
+// components/ConfirmationPanel.js — Customer confirmation (human-in-the-loop).
+// Shows an editable draft (To/Betreff/Nachricht) and sends it via the API,
+// which in turn triggers the n8n webhook → Outlook.
 import { useState } from "react";
 import { Btn } from "@/components/ui";
 import { Icon, I } from "@/components/icons";

@@ -1,5 +1,5 @@
-// app/buchungen/page.js — Vista "Buchungen / Hausmanager".
-// Server Component: lee las reservas de Postgres y las muestra agrupadas por casa.
+// app/buchungen/page.js — "Buchungen / Hausmanager" view.
+// Server Component: reads the bookings from Postgres and shows them grouped by house.
 import Header from "@/components/Header";
 import BookingsView from "@/components/BookingsView";
 import { getBookings } from "@/lib/bookings";

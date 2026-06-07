@@ -2,7 +2,7 @@
   "name": "bosco-hub-dashboard",
   "version": "0.1.0",
   "private": true,
-  "description": "Don Bosco / ZUK Staff Dashboard — lee las inquiries que n8n extrae de los emails y las muestra para revisión del equipo.",
+  "description": "Don Bosco / ZUK Staff Dashboard — reads the inquiries n8n extracts from emails and shows them for the team to review.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

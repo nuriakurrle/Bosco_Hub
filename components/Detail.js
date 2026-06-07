@@ -1,7 +1,7 @@
 "use client";
-// components/Detail.js — Vista de una sola anfrage: a la izquierda la fuente
-// (email/llamada), a la derecha los datos que extrajo la IA, para revisar,
-// editar (se guarda en Postgres) y crear la reserva.
+// components/Detail.js — Single inquiry view: source on the left (email/call),
+// the data the AI extracted on the right — to review, edit (saved to Postgres)
+// and create the booking.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
@@ -13,7 +13,7 @@ import { suggestedPerson } from "@/lib/team";
 export default function Detail({ item, staff = [], me }) {
   const router = useRouter();
   const alreadyBooked = item.trackerStatus === "booking_created";
-  // Si ya hay reserva, los campos se muestran como confirmados (no se re-chequean).
+  // If already booked, the fields are shown as confirmed (not re-checked).
   const [fields, setFields] = useState(() =>
     alreadyBooked
       ? item.fields.map((f) => ({ ...f, status: f.value ? "verified" : "missing" }))
@@ -24,7 +24,7 @@ export default function Detail({ item, staff = [], me }) {
   const [created, setCreated] = useState(alreadyBooked);
   const [toast, setToast] = useState(null);
 
-  // Bloqueado = ya tiene reserva: el detalle queda de solo lectura.
+  // Locked = already booked: the detail becomes read-only.
   const locked = created;
 
   const review = fields.filter((f) => f.status === "review");
@@ -44,7 +44,7 @@ export default function Detail({ item, staff = [], me }) {
     setFields((fs) => fs.map((f) => (f.status === "review" ? { ...f, status: "verified" } : f)));
   }
 
-  // Guardar un campo editado en la base de datos (columna = field.key).
+  // Save an edited field to the database (column = field.key).
   async function save(id, val) {
     const field = fields.find((f) => f.id === id);
     setFields((fs) =>
@@ -135,7 +135,7 @@ export default function Detail({ item, staff = [], me }) {
 
       {/* split */}
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        {/* FUENTE */}
+        {/* SOURCE */}
         <section className="db-scroll" style={{ flex: "1 1 52%", minWidth: 0, padding: 22, borderRight: "1px solid var(--db-line)" }}>
           <Card title={item.channel === "phone" ? "Telefonat" : "E-Mail"} kicker={item.receivedAbs}>
             <p style={{ fontFamily: "var(--db-font-mono)", fontSize: 11, color: "var(--db-text-faint)", marginTop: 0 }}>
@@ -159,7 +159,7 @@ export default function Detail({ item, staff = [], me }) {
           </Card>
         </section>
 
-        {/* EXTRAÍDO */}
+        {/* EXTRACTED */}
         <section style={{ flex: "1 1 48%", minWidth: 0, display: "flex", flexDirection: "column", background: "var(--db-paper)" }}>
           <div style={{ padding: "16px 18px 10px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 8 }}>
             <div>
@@ -249,11 +249,11 @@ export default function Detail({ item, staff = [], me }) {
               </div>
             )}
 
-            {/* Confirmación al cliente (human-in-the-loop) */}
+            {/* Customer confirmation (human-in-the-loop) */}
             <ConfirmationPanel item={item} />
           </div>
 
-          {/* barra de acción */}
+          {/* action bar */}
           <div className="db-approve-bar">
             {created ? (
               <Pill tone="success">Buchung angelegt · Status Anfrage</Pill>

@@ -1,4 +1,4 @@
-// components/ui.js — Componentes de UI reutilizables (portado de shared.jsx).
+// components/ui.js — Reusable UI components (ported from shared.jsx).
 import { Icon, I } from "@/components/icons";
 
 export function Pill({ tone = "neutral", children, dot = true }) {

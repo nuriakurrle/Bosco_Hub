@@ -1,7 +1,7 @@
 "use client";
-// AssignControl — pastilla para asignar una inquiry a una persona del equipo.
-// Presentacional: el equipo (`staff`) y el usuario actual (`me`) llegan por props
-// desde el servidor; el guardado lo hace el padre vía onAssign.
+// AssignControl — pill to assign an inquiry to a team member.
+// Presentational: the team (`staff`) and current user (`me`) arrive via props
+// from the server; the parent persists via onAssign.
 import { Icon, I } from "@/components/icons";
 
 export default function AssignControl({ id, who, suggest, onAssign, compact, staff = [], me }) {

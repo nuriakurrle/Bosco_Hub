@@ -1,5 +1,5 @@
-// POST /api/inquiries/:id/booking → crea una reserva real en `bookings`
-// a partir de la inquiry, y marca la inquiry como 'booking_created'.
+// POST /api/inquiries/:id/booking → creates a real booking in `bookings`
+// from the inquiry, and marks the inquiry as 'booking_created'.
 import { NextResponse } from "next/server";
 import { createBookingFromInquiry } from "@/lib/inquiries";
 
@@ -12,7 +12,7 @@ export async function POST(req, { params }) {
     try {
       body = await req.json();
     } catch {
-      /* sin cuerpo está bien */
+      /* no body is fine */
     }
     const result = await createBookingFromInquiry(id, body.created_by);
     if (!result) return NextResponse.json({ error: "not found" }, { status: 404 });

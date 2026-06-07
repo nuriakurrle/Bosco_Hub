@@ -1,5 +1,5 @@
-// GET   /api/inquiries/:id  → una inquiry
-// PATCH /api/inquiries/:id  → actualiza (asignación, estado, o campos editados)
+// GET   /api/inquiries/:id  → one inquiry
+// PATCH /api/inquiries/:id  → update (assignment, status, or edited fields)
 import { NextResponse } from "next/server";
 import { getInquiry, updateInquiry } from "@/lib/inquiries";
 

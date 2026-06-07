@@ -1,8 +1,8 @@
-// GET /api/inquiries  → lista todas las inquiries que n8n ha extraído.
+// GET /api/inquiries  → list all inquiries n8n has extracted.
 import { NextResponse } from "next/server";
 import { getInquiries } from "@/lib/inquiries";
 
-export const dynamic = "force-dynamic"; // siempre datos frescos de Postgres
+export const dynamic = "force-dynamic"; // always fresh data from Postgres
 
 export async function GET() {
   try {
@@ -11,7 +11,7 @@ export async function GET() {
   } catch (err) {
     console.error("GET /api/inquiries", err);
     return NextResponse.json(
-      { error: "No se pudo leer la base de datos. ¿Está el docker de Postgres arriba?" },
+      { error: "Datenbank nicht erreichbar. Läuft der Postgres-Docker?" },
       { status: 500 }
     );
   }

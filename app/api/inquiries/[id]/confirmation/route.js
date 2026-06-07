@@ -1,6 +1,6 @@
 // POST /api/inquiries/:id/confirmation
-// Envía la confirmación al cliente: llama al webhook del workflow "Send Email"
-// de n8n (que reusa la credencial de Outlook) y marca la inquiry como enviada.
+// Sends the confirmation to the customer: calls the webhook of the n8n "Send Email"
+// workflow (which reuses the Outlook credential) and marks the inquiry as sent.
 import { NextResponse } from "next/server";
 import { markConfirmationSent } from "@/lib/inquiries";
 
@@ -25,7 +25,7 @@ export async function POST(req, { params }) {
       return NextResponse.json(
         {
           error:
-            "n8n no aceptó el envío. ¿Está activo (Publish) el workflow 'Send Confirmation Email'?",
+            "n8n hat den Versand nicht akzeptiert. Ist der Workflow 'Send Confirmation Email' aktiv (Publish)?",
           n8nStatus: res.status,
         },
         { status: 502 }

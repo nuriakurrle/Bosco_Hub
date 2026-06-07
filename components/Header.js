@@ -1,5 +1,5 @@
-// components/Header.js — Barra superior con navegación funcional.
-// Recibe el equipo, el usuario actual y la sección activa desde el servidor.
+// components/Header.js — Top bar with working navigation.
+// Receives the team, the current user and the active section from the server.
 import Link from "next/link";
 import { Icon, I } from "@/components/icons";
 import UserSwitcher from "@/components/UserSwitcher";

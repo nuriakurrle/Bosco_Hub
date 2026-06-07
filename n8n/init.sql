@@ -77,12 +77,12 @@ CREATE TABLE IF NOT EXISTS inquiries (
     sensitive_data_note      TEXT,
     school_id                INTEGER REFERENCES schools(id) ON DELETE SET NULL,
     updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    -- Columnas usadas por el dashboard Next.js (Bosco_Hub):
+    -- Columns used by the Next.js dashboard (Bosco_Hub):
     channel                  TEXT NOT NULL DEFAULT 'email',  -- 'email' | 'phone'
-    assigned_to              TEXT,                            -- persona del equipo asignada en el dashboard
-    summary                  TEXT,                            -- resumen del agente para el staff
-    raw_body                 TEXT,                            -- texto original del email (para el panel "fuente")
-    confirmation_sent_at     TIMESTAMPTZ                      -- cuándo se envió la confirmación al cliente
+    assigned_to              TEXT,                            -- team member assigned in the dashboard
+    summary                  TEXT,                            -- the agent's summary for the staff
+    raw_body                 TEXT,                            -- original email text (for the "source" panel)
+    confirmation_sent_at     TIMESTAMPTZ                      -- when the customer confirmation was sent
 );
 
 CREATE INDEX IF NOT EXISTS idx_inquiries_status     ON inquiries (tracker_status);
@@ -99,9 +99,9 @@ CREATE TABLE IF NOT EXISTS bookings (
     inquiry_id      INTEGER REFERENCES inquiries(id) ON DELETE SET NULL,
     school_id       INTEGER REFERENCES schools(id) ON DELETE SET NULL,
     house_id        INTEGER REFERENCES houses(id) ON DELETE SET NULL,
-    -- Las fechas pueden ir vacías: la IA a veces da el rango en texto libre
-    -- (p.ej. "Mitte Oktober"). Guardamos el texto original y las fechas
-    -- concretas cuando se pueden parsear.
+    -- Dates may be empty: the AI sometimes gives the range as free text
+    -- (e.g. "Mitte Oktober"). We store the original text and the concrete
+    -- dates when they can be parsed.
     start_date      DATE,
     end_date        DATE,
     date_range_text TEXT,
@@ -123,20 +123,20 @@ CREATE INDEX IF NOT EXISTS idx_bookings_house ON bookings (house_id);
 
 -- ----------------------------------------------------------------
 -- STAFF
--- Equipo de recepción. Antes estaba hardcodeado en lib/team.js del
--- dashboard; ahora vive aquí para poder editarlo sin tocar código.
+-- Reception team. It used to be hardcoded in the dashboard's lib/team.js;
+-- now it lives here so it can be edited without touching code.
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS staff (
-    key        TEXT PRIMARY KEY,           -- identificador corto, p.ej. 'vanessa'
+    key        TEXT PRIMARY KEY,           -- short identifier, e.g. 'vanessa'
     name       TEXT NOT NULL,
-    short      TEXT NOT NULL,              -- iniciales para el avatar
-    area       TEXT,                       -- área que atiende (para sugerir asignación)
+    short      TEXT NOT NULL,              -- initials for the avatar
+    area       TEXT,                       -- area they handle (used to suggest assignment)
     active     BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ----------------------------------------------------------------
--- Seed data: las dos casas ZUK y el equipo inicial.
+-- Seed data: the two ZUK houses and the initial team.
 -- ----------------------------------------------------------------
 INSERT INTO houses (name, description) VALUES
     ('Jugendherberge', 'Youth hostel with shared bathrooms on each floor'),

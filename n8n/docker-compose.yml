@@ -1,6 +1,6 @@
-# name fija el nombre del proyecto Compose. Así los volúmenes siguen llamándose
-# zuk_proto_postgres_data / zuk_proto_n8n_data aunque esta carpeta sea n8n/,
-# y conservamos los datos que ya existían (no se crea una base vacía nueva).
+# name pins the Compose project name. This way the volumes keep the names
+# zuk_proto_postgres_data / zuk_proto_n8n_data even though this folder is n8n/,
+# and we keep the data that already existed (no new empty database is created).
 name: zuk_proto
 
 services:

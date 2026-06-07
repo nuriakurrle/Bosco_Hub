@@ -1,8 +1,8 @@
 "use client";
-// components/Inbox.js — Team-Posteingang. Recibe las inquiries ya mapeadas
-// desde el servidor (leídas de Postgres) y las muestra como tarjetas.
-// Una "email con varias reservas" llega como varias filas con el mismo
-// conversationId; aquí las agrupamos en una sola tarjeta.
+// components/Inbox.js — Team-Posteingang. Receives the already-mapped inquiries
+// from the server (read from Postgres) and shows them as cards.
+// An "email with several bookings" arrives as several rows with the same
+// conversationId; here we group them into a single card.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
@@ -10,7 +10,7 @@ import { Pill } from "@/components/ui";
 import AssignControl from "@/components/AssignControl";
 import { areaColor, areaLabel, suggestedPerson } from "@/lib/team";
 
-// Agrupa por conversación. Las filas sin conversationId quedan solas.
+// Group by conversation. Rows without a conversationId stand alone.
 function groupItems(items) {
   const groups = [];
   const byConv = new Map();
@@ -33,7 +33,7 @@ export default function Inbox({ items: initialItems, staff = [], me }) {
   const [toast, setToast] = useState(null);
 
   async function onAssign(id, who) {
-    // Optimista: actualiza la UI y persiste en la base de datos.
+    // Optimistic: update the UI and persist to the database.
     setItems((prev) =>
       prev.map((it) => (it.id === id ? { ...it, assignedTo: who } : it))
     );
@@ -51,7 +51,7 @@ export default function Inbox({ items: initialItems, staff = [], me }) {
 
   const groups = groupItems(items);
 
-  // Filtros
+  // Filters
   let rows = groups;
   if (filter === "email") rows = rows.filter((g) => g.primary.channel === "email");
   if (filter === "phone") rows = rows.filter((g) => g.primary.channel === "phone");
@@ -130,8 +130,8 @@ export default function Inbox({ items: initialItems, staff = [], me }) {
             const multi = g.items.length > 1;
             const isDone = g.items.every((x) => x.trackerStatus === "booking_created");
             const missing = i.fields.filter((f) => f.status === "missing").length;
-            // Área: usa el routing de n8n; si vino "unassigned", cae a la casa
-            // que detectó la IA, para no mostrar "—".
+            // Area: use n8n's routing; if it came as "unassigned", fall back to
+            // the house the AI detected, so we don't show "—".
             const rawArea = i.responsibleArea;
             const area =
               rawArea && areaLabel(rawArea) !== "—" ? rawArea : i.house || rawArea;
@@ -144,7 +144,7 @@ export default function Inbox({ items: initialItems, staff = [], me }) {
                 onClick={() => router.push(`/inquiry/${i.id}`)}
               >
                 <div style={{ display: "flex", alignItems: "stretch" }}>
-                  {/* riel del canal */}
+                  {/* channel rail */}
                   <div
                     style={{
                       width: 48,
@@ -159,7 +159,7 @@ export default function Inbox({ items: initialItems, staff = [], me }) {
                   >
                     <Icon d={i.channel === "phone" ? I.clock : I.mail} size={18} />
                   </div>
-                  {/* contenido */}
+                  {/* content */}
                   <div style={{ flex: 1, minWidth: 0, padding: "11px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                       <span
@@ -213,7 +213,7 @@ export default function Inbox({ items: initialItems, staff = [], me }) {
                       {i.from} — {i.summary}
                     </div>
                   </div>
-                  {/* routing + asignación */}
+                  {/* routing + assignment */}
                   <div
                     onClick={(e) => e.stopPropagation()}
                     style={{

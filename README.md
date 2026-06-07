@@ -1,152 +1,172 @@
 # Bosco Hub — ZUK Staff Dashboard (Next.js)
 
-Dashboard del equipo de recepción de Don Bosco / Kloster Benediktbeuern.
-Muestra las **inquiries** (anfragen) que el agente de **n8n** extrae automáticamente
-de los emails, para que el equipo las revise, asigne y convierta en reservas.
+Dashboard for the reception team of Don Bosco / Kloster Benediktbeuern.
+It shows the **inquiries** (Anfragen) that the **n8n** agent automatically extracts
+from incoming emails, so the team can review them, assign them and turn them into
+bookings.
 
-> Hecho a partir del prototipo de diseño de la compañera (carpeta
-> `design-reference/`), portado a Next.js manteniendo **exactamente el mismo UI**.
+> Built from the design prototype (folder `design-reference/`), ported to Next.js
+> while keeping **exactly the same UI**.
 
-## Cómo encaja todo (la conexión con n8n)
+## How it all fits together (the n8n connection)
 
 ```
    Outlook (emails)
         │
         ▼
-   ┌─────────────┐   extrae con IA      ┌──────────────┐   lee/escribe   ┌────────────────┐
-   │    n8n      │ ───────────────────▶ │  Postgres    │ ◀────────────── │  Dashboard     │
-   │  workflow   │   INSERT inquiries   │  (tabla      │                 │  Next.js       │
-   │             │                      │  inquiries)  │   este repo     │  (Bosco_Hub)   │
-   └─────────────┘                      └──────────────┘                 └────────────────┘
+   ┌─────────────┐   AI extraction     ┌──────────────┐   read/write    ┌────────────────┐
+   │    n8n      │ ──────────────────▶ │  Postgres    │ ◀────────────── │  Dashboard     │
+   │  workflow   │   INSERT inquiries  │  (inquiries  │                 │  Next.js       │
+   │             │                     │   table)     │   this repo     │  (Bosco_Hub)   │
+   └─────────────┘                     └──────────────┘                 └────────────────┘
 ```
 
-La **tabla `inquiries` de Postgres es el punto de unión**: n8n escribe ahí lo que
-extrae de cada email, y este dashboard lee de la misma tabla y escribe de vuelta
-(asignaciones, edición de campos, estado "reserva creada").
+The **`inquiries` table in Postgres is the meeting point**: n8n writes what it
+extracts from each email, and this dashboard reads from the same table and writes
+back (assignments, field edits, "booking created" status).
 
-El workflow de n8n, el `docker-compose` y el `init.sql` viven en la carpeta
-[`n8n/`](./n8n) de este mismo repo.
+The n8n workflow, the `docker-compose` and the `init.sql` live in the
+[`n8n/`](./n8n) folder of this same repo.
 
-## Requisitos
+## Requirements
 
-- Node.js 18+ (probado con Node 25)
-- Docker Desktop (para Postgres + n8n)
+- Node.js 18+ (tested with Node 25)
+- Docker Desktop (for Postgres + n8n)
 
-## Arrancar en local
+## Run locally
 
-**1. Levanta Postgres (y n8n) — desde la carpeta del workflow:**
+**1. Start Postgres (and n8n) — from the workflow folder:**
 
 ```bash
 cd n8n
 docker compose up -d
 ```
 
-Postgres queda en `localhost:5434`, n8n en `localhost:5678`.
+Postgres listens on `localhost:5434`, n8n on `localhost:5678`.
 
-**2. (Opcional) datos de demo para ver el dashboard poblado sin emails reales:**
+**2. (Optional) demo data, to see the dashboard populated without real emails:**
 
 ```bash
 PGPASSWORD=zuk_prototype_2026 psql -h localhost -p 5434 -U zuk -d zuk -f db/seed.sql
 ```
 
-> El dashboard normalmente se llena solo con lo que n8n extrae de los emails.
-> Este seed es solo para demos. Para quitarlo:
+> The dashboard normally fills itself with whatever n8n extracts from emails.
+> This seed is only for demos. To remove it:
 > `DELETE FROM inquiries WHERE conversation_id LIKE 'demo-%';`
 
-**3. Instala dependencias y arranca el dashboard:**
+**3. Install dependencies and start the dashboard:**
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abre <http://localhost:3000>.
+Open <http://localhost:3000>.
 
-La conexión a la base de datos está en `.env.local` (`DATABASE_URL`). Si cambias
-las credenciales del docker, ajusta ese archivo.
+The database connection lives in `.env.local` (`DATABASE_URL`). If you change the
+docker credentials, update that file.
 
-## Estructura
+## Structure
 
 ```
 app/
-  page.js                  Página principal — el Team-Posteingang (lee Postgres)
-  inquiry/[id]/page.js     Detalle de una anfrage (o vista "split" si la email tenía varias)
-  buchungen/page.js        Vista "Buchungen / Hausmanager" (reservas por casa)
-  api/inquiries/route.js                   GET lista de inquiries
-  api/inquiries/[id]/route.js              GET una / PATCH (asignar, editar campo)
-  api/inquiries/[id]/booking/route.js      POST crear reserva real en `bookings`
-  api/inquiries/[id]/confirmation/route.js POST confirmación al cliente (→ webhook n8n)
-  globals.css              Estilos (copiados tal cual del prototipo)
-  layout.js                Layout raíz + fuentes
+  page.js                  Main page — the Team-Posteingang (reads Postgres)
+  inquiry/[id]/page.js     Detail of one inquiry (or "split" view if the email had several)
+  buchungen/page.js        "Buchungen / Hausmanager" view (bookings grouped by house)
+  api/inquiries/route.js                   GET list of inquiries
+  api/inquiries/[id]/route.js              GET one / PATCH (assign, edit field)
+  api/inquiries/[id]/booking/route.js      POST create a real booking in `bookings`
+  api/inquiries/[id]/confirmation/route.js POST customer confirmation (→ n8n webhook)
+  globals.css              Styles (copied verbatim from the prototype)
+  layout.js                Root layout + fonts
 components/
-  Inbox.js, Detail.js, SplitDetail.js   Las pantallas de anfragen (client)
-  BookingsView.js          Lista de reservas por casa (Hausmanager)
-  ConfirmationPanel.js     Borrador editable + enviar confirmación al cliente
+  Inbox.js, Detail.js, SplitDetail.js   The inquiry screens (client components)
+  BookingsView.js          Bookings list grouped by house (Hausmanager)
+  ConfirmationPanel.js     Editable draft + send confirmation to the customer
   Header.js, AssignControl.js, UserSwitcher.js
-  ui.js, icons.js          Componentes base portados de shared.jsx
+  ui.js, icons.js          Base components ported from shared.jsx
 lib/
-  db.js                    Pool de conexión a Postgres
-  inquiries.js             Consultas + mapeo fila DB → forma de la UI + crear reserva
-  bookings.js              Lectura de reservas para la vista Buchungen
-  confirmation.js          Genera el borrador de confirmación (plantilla)
-  staff.js                 Equipo (tabla `staff`) y usuario actual (cookie)
-  team.js                  Colores de área y regla de "persona sugerida"
+  db.js                    Postgres connection pool
+  inquiries.js             Queries + DB row → UI shape mapping + create booking
+  bookings.js              Reads bookings for the Buchungen view
+  confirmation.js          Builds the confirmation draft (template)
+  staff.js                 Team (`staff` table) and current user (cookie)
+  team.js                  Area colors and the "suggested person" rule
 db/
-  seed.sql                 Datos de demostración (los ejemplos en alemán)
+  seed.sql                 Demo data (the German sample inquiries)
 n8n/
-  docker-compose.yml       Levanta Postgres (5434) + n8n (5678). name: zuk_proto
-  init.sql                 Esquema de la base de datos
-  zuk_email_agent_prototype_v1.json   El workflow importable en n8n
-  README-n8n.md            Guía detallada de n8n (credenciales Outlook/OpenAI/Postgres)
-design-reference/          El prototipo original (HTML/JSX) — solo referencia
+  docker-compose.yml       Starts Postgres (5434) + n8n (5678). name: zuk_proto
+  init.sql                 Database schema
+  zuk_email_agent_prototype_v1.json   The importable n8n workflow (email → Postgres)
+  zuk_send_email.json      Small workflow: webhook → Outlook send (customer confirmation)
+  README-n8n.md            Detailed n8n guide (Outlook/OpenAI/Postgres credentials)
+design-reference/          The original prototype (HTML/JSX) — reference only
 ```
 
-## Cómo fluye un dato
+## How a piece of data flows
 
-1. n8n recibe un email, la IA extrae los campos y hace `INSERT` en `inquiries`
-   (con `tracker_status` = `ready_for_review` o `needs_info`).
-2. El dashboard lee esas filas en `app/page.js` (Server Component) → `lib/inquiries.js`.
-3. Cada fila se traduce a la "forma" que esperan los componentes (`rowToItem`).
-4. El equipo asigna / edita / crea reserva → `PATCH /api/inquiries/:id` → `UPDATE` en Postgres.
+1. n8n receives an email, the AI extracts the fields and `INSERT`s into `inquiries`
+   (with `tracker_status` = `ready_for_review` or `needs_info`).
+2. The dashboard reads those rows in `app/page.js` (Server Component) → `lib/inquiries.js`.
+3. Each row is translated into the "shape" the components expect (`rowToItem`).
+4. The team assigns / edits / creates a booking → `PATCH`/`POST /api/inquiries/:id` → `UPDATE`/`INSERT` in Postgres.
 
-## Columnas añadidas a `inquiries` para el dashboard
+## Columns added to `inquiries` for the dashboard
 
-Sobre el esquema original de n8n se agregaron (ya reflejadas en `init.sql`):
+On top of n8n's original schema we added (already reflected in `init.sql`):
 
-| columna       | para qué |
-|---------------|----------|
-| `channel`     | `'email'` o `'phone'` (riel de color en la bandeja) |
-| `assigned_to` | persona del equipo asignada desde el dashboard |
-| `summary`     | resumen del agente para el staff |
-| `raw_body`    | texto original del email (panel "fuente" del detalle) |
+| column                 | purpose |
+|------------------------|---------|
+| `channel`              | `'email'` or `'phone'` (color rail in the inbox) |
+| `assigned_to`          | team member assigned from the dashboard |
+| `summary`              | the agent's summary for the staff |
+| `raw_body`             | original email text (detail "source" panel) |
+| `confirmation_sent_at` | when the customer confirmation was sent |
 
-El workflow de n8n (`zuk_email_agent_prototype_v1.json`) ya rellena `channel`,
-`summary` y `raw_body` en sus nodos de INSERT.
+The n8n workflow (`zuk_email_agent_prototype_v1.json`) already fills `channel`,
+`summary` and `raw_body` in its INSERT nodes.
 
-## ¿Dónde se cambia cada cosa? (3 lugares)
+## Where do you change things? (3 places)
 
-El proyecto tiene **3 piezas** y cada una se edita en un lugar distinto:
+The project has **3 pieces** and each one is edited in a different place:
 
-| Pieza | Qué es | Dónde se cambia |
-|-------|--------|-----------------|
-| **Postgres** (base de datos) | Donde viven los datos: `inquiries`, `staff`, `bookings`, `houses`. Tanto n8n como el dashboard leen/escriben aquí. | Con SQL: `psql` (o editando `n8n/init.sql` para un arranque limpio). |
-| **n8n** (`localhost:5678`) | El "robot" que lee los emails de Outlook, los entiende con IA y los mete a Postgres. Corre en Docker, aparte del dashboard. | En su interfaz visual (arrastrar/editar nodos) o re-importando `n8n/zuk_email_agent_prototype_v1.json`. |
-| **Dashboard** (este repo, `localhost:3000`) | La interfaz que ve el equipo. | Editando el código (`app/`, `components/`, `lib/`). |
+| Piece | What it is | Where you change it |
+|-------|------------|---------------------|
+| **Postgres** (database) | Where the data lives: `inquiries`, `staff`, `bookings`, `houses`. Both n8n and the dashboard read/write here. | With SQL: `psql` (or editing `n8n/init.sql` for a clean start). |
+| **n8n** (`localhost:5678`) | The "robot" that reads Outlook emails, understands them with AI and puts them into Postgres. Runs in Docker, separate from the dashboard. | In its visual UI (drag/edit nodes) or by re-importing `n8n/zuk_email_agent_prototype_v1.json`. |
+| **Dashboard** (this repo, `localhost:3000`) | The interface the team sees. | By editing the code (`app/`, `components/`, `lib/`). |
 
-Ejemplos:
+Examples:
 
-- **Agregar/editar una persona del equipo** → SQL en la tabla `staff`:
+- **Add/edit a team member** → SQL on the `staff` table:
   ```bash
   PGPASSWORD=zuk_prototype_2026 psql -h localhost -p 5434 -U zuk -d zuk \
     -c "INSERT INTO staff (key,name,short,area) VALUES ('mara','Mara Vogel','MV','Seminare & Web');"
   ```
-- **Cambiar cómo la IA entiende los emails** → nodo "Extract Booking Requests" en n8n.
-- **Cambiar el aspecto/comportamiento del dashboard** → código en `components/`.
+- **Change how the AI understands emails** → "Extract Booking Requests" node in n8n.
+- **Change the look/behavior of the dashboard** → code in `components/`.
 
-## Próximos pasos (v2)
+## Customer confirmation (how it works)
 
-- Verificación de disponibilidad real contra `rooms` / `bookings` (los veredictos
-  "Platz frei / eng / voll" de la vista split).
-- Transcripción de llamadas (Whisper) → mismas `inquiries` con `channel = 'phone'`.
-- Borrador de "Rückfrage" disparado desde el dashboard hacia n8n (webhook).
-- Login real del equipo (hoy el usuario está fijo en `lib/team.js`).
+The confirmation back to the customer is **human-in-the-loop**: the dashboard
+pre-fills a German draft, the staff reviews/edits it and clicks send. The email is
+sent through n8n (which already has the Outlook connection):
+
+```
+Dashboard ("Senden") → POST /api/inquiries/:id/confirmation
+   → n8n webhook /webhook/zuk-send-email (workflow "ZUK - Send Confirmation Email")
+   → Outlook sends to the customer
+```
+
+The `ZUK - Send Confirmation Email` workflow must be **Published (active)** in n8n
+for the webhook to exist. Its URL base is configured via `N8N_BASE_URL` in `.env.local`.
+
+## Next steps (v2)
+
+- Real availability check against `rooms` / `bookings` (the "Platz frei / eng / voll"
+  verdicts in the split view).
+- Call transcription (Whisper) → same `inquiries` table with `channel = 'phone'`.
+- AI-written "Rückfrage" (follow-up asking for missing data) — this is where the AI
+  adds more value than in the formulaic confirmation.
+- Booking status lifecycle (Anfrage → bestätigt → Vertrag → bezahlt).
+- Real team login (today the current user is a simple switcher, see `lib/staff.js`).
