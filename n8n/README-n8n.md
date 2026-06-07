@@ -1,11 +1,4 @@
-# ZUK Email Booking Agent - Prototype v1 (n8n + Postgres)
-
-First prototype of the email workflow for the Kloster Benediktbeuern booking project.
-It covers email intake from Outlook, routing by mailbox address, structured extraction
-of booking requests with GPT-4o-mini, splitting of multiple requests inside one email,
-missing info detection, sensitive data flagging, persistence in Postgres, and draft
-generation for staff review. No email is ever sent automatically. The staff stays
-in the loop.
+# ZUK Email Booking Agent
 
 ## Folder contents
 
@@ -91,7 +84,7 @@ This is the longest setup, around ten minutes the first time.
 
 ## Step 4: Test
 
-Send a test email in German to the connected Outlook inbox. The most useful
+Send a test email to the connected Outlook inbox. The most useful
 test cases:
 
 - One email with two or three booking requests at once (the "Frau Baggi"
