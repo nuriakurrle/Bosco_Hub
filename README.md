@@ -78,9 +78,19 @@ couple of minutes while it downloads.
 ✅ Check: in Docker Desktop you should see two green containers, `zuk-postgres`
 and `zuk-n8n`.
 
+### 4. (Optional) Load demo data
 
+So the dashboard isn't empty before real emails arrive, you can load sample
+inquiries:
 
-### 4. Start the dashboard
+```bash
+docker exec -i zuk-postgres psql -U zuk -d zuk < db/seed.sql
+```
+
+> To remove the demo data later:
+> `docker exec -i zuk-postgres psql -U zuk -d zuk -c "DELETE FROM inquiries WHERE conversation_id LIKE 'demo-%';"`
+
+### 5. Start the dashboard
 
 ```bash
 npm install
