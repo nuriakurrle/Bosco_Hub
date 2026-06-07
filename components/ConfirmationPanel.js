@@ -1,0 +1,122 @@
+"use client";
+// components/ConfirmationPanel.js — Confirmación al cliente (human-in-the-loop).
+// Muestra un borrador editable (Para/Betreff/Nachricht) y lo envía vía la API,
+// que a su vez dispara el webhook de n8n → Outlook.
+import { useState } from "react";
+import { Btn } from "@/components/ui";
+import { Icon, I } from "@/components/icons";
+import { buildConfirmationDraft } from "@/lib/confirmation";
+
+const labelStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 3,
+  fontSize: 11,
+  fontWeight: 600,
+  color: "var(--db-text-muted)",
+};
+const inputStyle = {
+  fontFamily: "inherit",
+  fontSize: 12.5,
+  border: "1px solid var(--db-line-strong)",
+  borderRadius: 6,
+  padding: "6px 8px",
+  color: "var(--db-text)",
+  background: "#fff",
+};
+
+export default function ConfirmationPanel({ item }) {
+  const draft = buildConfirmationDraft(item);
+  const [open, setOpen] = useState(false);
+  const [to, setTo] = useState(draft.to);
+  const [subject, setSubject] = useState(draft.subject);
+  const [body, setBody] = useState(draft.body);
+  const [sent, setSent] = useState(Boolean(item.confirmationSentAt));
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function send() {
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/inquiries/${item.id}/confirmation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to, subject, text: body }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Senden fehlgeschlagen.");
+      }
+      setSent(true);
+      setOpen(false);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (sent) {
+    return (
+      <div className="sent-banner" style={{ marginTop: 14 }}>
+        <Icon d={I.check} size={16} />
+        <span>
+          <b>Bestätigung an den Kunden gesendet.</b>
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="followup" style={{ marginTop: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Icon d={I.mail} size={14} style={{ color: "var(--db-secondary)" }} />
+        <b style={{ fontSize: 12.5 }}>Kundenbestätigung</b>
+        {!open && (
+          <span style={{ marginLeft: "auto" }}>
+            <Btn kind="sage" size="sm" icon="mail" onClick={() => setOpen(true)}>
+              Bestätigung vorbereiten
+            </Btn>
+          </span>
+        )}
+      </div>
+
+      {open && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+          <label style={labelStyle}>
+            An
+            <input style={inputStyle} value={to} onChange={(e) => setTo(e.target.value)} />
+          </label>
+          <label style={labelStyle}>
+            Betreff
+            <input
+              style={inputStyle}
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+          </label>
+          <label style={labelStyle}>
+            Nachricht
+            <textarea
+              style={{ ...inputStyle, minHeight: 150, fontFamily: "var(--db-font-serif)", lineHeight: 1.5 }}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+            />
+          </label>
+          {error && (
+            <span style={{ color: "var(--db-error)", fontSize: 12 }}>{error}</span>
+          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn kind="primary" size="sm" icon="send" disabled={sending || !to} onClick={send}>
+              {sending ? "Senden…" : "Bestätigung senden"}
+            </Btn>
+            <Btn kind="ghost" size="sm" onClick={() => setOpen(false)}>
+              Abbrechen
+            </Btn>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

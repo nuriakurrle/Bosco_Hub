@@ -1,0 +1,18 @@
+{
+  "name": "bosco-hub-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Don Bosco / ZUK Staff Dashboard — lee las inquiries que n8n extrae de los emails y las muestra para revisión del equipo.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "15.1.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "pg": "8.13.1"
+  }
+}

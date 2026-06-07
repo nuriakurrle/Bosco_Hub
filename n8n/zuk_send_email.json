@@ -1,0 +1,49 @@
+{
+  "id": "zuksendmail00001",
+  "name": "ZUK - Send Confirmation Email",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zuk-send-email",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "zuk-send-email"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "={{ $json.body.subject }}",
+        "bodyContent": "={{ $json.body.text }}",
+        "bodyContentType": "text",
+        "toRecipients": "={{ $json.body.to }}",
+        "additionalFields": {}
+      },
+      "id": "node-send",
+      "name": "Send Email (Outlook)",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [240, 0],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "eXHyYae26YCM5xwv",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[ { "node": "Send Email (Outlook)", "type": "main", "index": 0 } ]]
+    }
+  }
+}

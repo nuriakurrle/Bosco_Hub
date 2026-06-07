@@ -1,0 +1,56 @@
+# name fija el nombre del proyecto Compose. Así los volúmenes siguen llamándose
+# zuk_proto_postgres_data / zuk_proto_n8n_data aunque esta carpeta sea n8n/,
+# y conservamos los datos que ya existían (no se crea una base vacía nueva).
+name: zuk_proto
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: zuk-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=zuk
+      - POSTGRES_PASSWORD=zuk_prototype_2026
+      - POSTGRES_DB=zuk
+      - TZ=Europe/Berlin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zuk -d zuk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: zuk-n8n
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5678:5678"
+    environment:
+      # Basic auth on the n8n UI. Change these before sharing.
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=zuk
+      - N8N_BASIC_AUTH_PASSWORD=zuk_prototype_2026
+      # Local URL and timezone
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Europe/Berlin
+      - TZ=Europe/Berlin
+      # Quiet down deprecation warnings on first run
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
+  postgres_data:
