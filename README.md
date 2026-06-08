@@ -75,6 +75,10 @@ This starts two things in the background: **Postgres** (the database, on port 54
 and **n8n** (the automation tool, on port 5678). The first time it may take a
 couple of minutes while it downloads.
 
+> No password needed. On Mac/Windows with Docker Desktop this command does not
+> ask for anything. The database password is already inside `docker-compose.yml`,
+> so Docker sets it up automatically — you never type it.
+
 ✅ Check: in Docker Desktop you should see two green containers, `zuk-postgres`
 and `zuk-n8n`.
 
@@ -123,10 +127,15 @@ Short version, inside n8n (<http://localhost:5678>):
 
 1. Create the owner account when first asked (any email + a password you remember).
 2. Create the 3 credentials (see the n8n guide for details).
-3. Import the two workflow files from the `n8n/` folder
-   (`zuk_email_agent_prototype_v1.json` and `zuk_send_email.json`), and make sure
-   each node uses your credentials.
+3. The two workflows are **already imported automatically** the first time the
+   container starts — you don't import them by hand. Just open each one and
+   assign your credentials to its nodes.
 4. **Publish** both workflows to activate them.
+
+> The workflows auto-import only on a fresh install (tracked by a marker file in
+> the n8n volume), so normal restarts never overwrite the credentials you assigned.
+> Only the **credentials** need a one-time manual setup — they are secret and are
+> intentionally not stored in the repo.
 
 ## Structure
 

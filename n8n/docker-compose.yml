@@ -50,6 +50,24 @@ services:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
     volumes:
       - n8n_data:/home/node/.n8n
+      # Workflow files from the repo, mounted read-only so they can be auto-imported.
+      - ./zuk_email_agent_prototype_v1.json:/workflows/email-agent.json:ro
+      - ./zuk_send_email.json:/workflows/send-email.json:ro
+    # On startup: only the FIRST time (no marker file yet) import the two workflows
+    # from /workflows, then start. The marker lives in the n8n volume, so later
+    # restarts skip the import and never overwrite UI changes (e.g. assigned
+    # credentials). A full reset (docker compose down -v) removes the marker, so a
+    # fresh install imports them again.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        if [ ! -f /home/node/.n8n/.workflows-imported ]; then
+        echo "n8n: first run, importing workflows from /workflows ...";
+        n8n import:workflow --input=/workflows/email-agent.json || true;
+        n8n import:workflow --input=/workflows/send-email.json || true;
+        touch /home/node/.n8n/.workflows-imported;
+        fi;
+        exec n8n start
 
 volumes:
   n8n_data:

@@ -1,4 +1,5 @@
 {
+  "id": "fEejzwIFeoSDGVm6",
   "name": "ZUK - Email Booking Agent (Prototype v1)",
   "active": false,
   "settings": {
@@ -26,7 +27,7 @@
       "position": [0, 320],
       "credentials": {
         "microsoftOutlookOAuth2Api": {
-          "id": "eXHyYae26YCM5xwv",
+          "id": "pz39HKdSrd0eNmNp",
           "name": "Microsoft Outlook account"
         }
       }
@@ -110,7 +111,7 @@
       "position": [620, 540],
       "credentials": {
         "openAiApi": {
-          "id": "SRI0G5jqOoAw6op3",
+          "id": "lW4oEwYMD9bp8Ozr",
           "name": "OpenAI account"
         }
       }
@@ -305,7 +306,7 @@
       "position": [1580, 200],
       "credentials": {
         "postgres": {
-          "id": "DouVJIgsycFTBwDq",
+          "id": "AgxT6n3DJAUKla0C",
           "name": "Postgres ZUK"
         }
       }
@@ -380,7 +381,7 @@
       "position": [1580, 440],
       "credentials": {
         "postgres": {
-          "id": "DouVJIgsycFTBwDq",
+          "id": "AgxT6n3DJAUKla0C",
           "name": "Postgres ZUK"
         }
       }
