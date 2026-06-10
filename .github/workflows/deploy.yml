@@ -35,8 +35,11 @@ jobs:
       - name: Reconstruir la clave SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/deploy
+          # Quita cualquier espacio/salto de línea y decodifica el base64.
+          printf '%s' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '[:space:]' | base64 -d > ~/.ssh/deploy
           chmod 600 ~/.ssh/deploy
+          # Verifica que la clave es legible; si no, falla con un mensaje claro.
+          ssh-keygen -y -f ~/.ssh/deploy > /dev/null || { echo "❌ El secreto SSH_PRIVATE_KEY no es la clave en base64 correcta."; exit 1; }
 
       - name: Crear el .env con las contraseñas
         env:
