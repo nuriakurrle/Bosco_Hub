@@ -611,15 +611,24 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "get",
-        "messageId": "={{ $json.id }}",
+        "url": "=https://graph.microsoft.com/v1.0/me/messages/{{ $json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "outlook.body-content-type=\"text\""
+            }
+          ]
+        },
         "options": {}
       },
       "id": "getfullemail00001",
       "name": "Get Full Email",
-      "type": "n8n-nodes-base.microsoftOutlook",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         110,
         180
