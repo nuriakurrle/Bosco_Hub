@@ -40,8 +40,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "5678:5678"
+    # Sin "ports": n8n ya no se expone directo. Se accede por HTTPS a través de Caddy
+    # en https://n8n.boscohub.duckdns.org
     environment:
       # Login de la interfaz de n8n. CÁMBIALO en .env antes de desplegar.
       - N8N_BASIC_AUTH_ACTIVE=true
@@ -49,11 +49,13 @@ services:
       - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
       # Clave para cifrar las credenciales guardadas (Outlook, etc.). CÁMBIALA.
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-      # URL pública del servidor (IP o dominio), usada por los webhooks.
-      - N8N_HOST=${SERVER_HOST}
+      # Dominio público por HTTPS (detrás del proxy Caddy).
+      - N8N_HOST=n8n.boscohub.duckdns.org
       - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://${SERVER_HOST}:5678/
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://n8n.boscohub.duckdns.org/
+      # n8n está detrás de 1 proxy (Caddy): confía en sus cabeceras X-Forwarded.
+      - N8N_PROXY_HOPS=1
       - GENERIC_TIMEZONE=Europe/Berlin
       - TZ=Europe/Berlin
       - N8N_RUNNERS_ENABLED=true
@@ -87,15 +89,33 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # El equipo entra por el puerto 80 -> http://IP-DEL-SERVIDOR
-    ports:
-      - "80:3000"
+    # Sin "ports": el dashboard ya no se expone directo. Se accede por HTTPS con
+    # login a través de Caddy en https://boscohub.duckdns.org
     environment:
       # Conexiones INTERNAS por nombre de servicio (red de docker), no localhost.
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - N8N_BASE_URL=http://n8n:5678
       - NODE_ENV=production
 
+  caddy:
+    # Proxy inverso con HTTPS automático (Let's Encrypt). Es la única pieza
+    # expuesta a internet: recibe el tráfico y lo reparte al dashboard y a n8n.
+    image: caddy:2-alpine
+    container_name: zuk-caddy
+    restart: unless-stopped
+    depends_on:
+      - dashboard
+      - n8n
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   n8n_data:
   postgres_data:
+  caddy_data:
+  caddy_config:

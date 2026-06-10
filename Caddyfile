@@ -1,0 +1,16 @@
+# Caddyfile — Proxy inverso con HTTPS automático (certificados Let's Encrypt gratis).
+# Caddy saca y renueva los certificados solo; no hay que tocar nada.
+
+# Dashboard del equipo, protegido con login (usuario: bosco).
+boscohub.duckdns.org {
+	# Pide usuario y contraseña antes de mostrar el dashboard.
+	basic_auth {
+		bosco $2a$14$TZ0r19c.dCn9Xum1MGnkuerdb38DajY1wSg689LZWx5VS13VZbrPi
+	}
+	reverse_proxy dashboard:3000
+}
+
+# Panel de n8n (ya trae su propio login básico).
+n8n.boscohub.duckdns.org {
+	reverse_proxy n8n:5678
+}
