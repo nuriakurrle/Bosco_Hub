@@ -76,3 +76,23 @@ jobs:
           docker compose -f docker-compose.prod.yml up -d --build
           docker image prune -f
           ENDSSH
+
+      - name: Sincronizar workflows de n8n desde git
+        run: |
+          ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} 'bash -s' <<'ENDSSH'
+          set -e
+          cd /root/Bosco_Hub
+          DC="docker compose -f docker-compose.prod.yml"
+          # Espera a que el contenedor de n8n responda antes de importar.
+          echo "Esperando a que n8n esté listo..."
+          for i in $(seq 1 30); do
+            if $DC exec -T n8n n8n --version >/dev/null 2>&1; then break; fi
+            sleep 3
+          done
+          # Reimporta los workflows desde git (git = fuente de verdad).
+          echo "Importando workflows..."
+          $DC exec -T n8n n8n import:workflow --input=/workflows/email-agent.json || true
+          $DC exec -T n8n n8n import:workflow --input=/workflows/send-email.json || true
+          # Reactiva los que estén marcados como activos en su JSON.
+          $DC exec -T n8n n8n update:workflow --all --active=true || true
+          ENDSSH

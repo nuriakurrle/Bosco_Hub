@@ -62,22 +62,11 @@ services:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
     volumes:
       - n8n_data:/home/node/.n8n
-      # Los workflows del repo, montados de solo lectura para auto-importarse.
+      # Los workflows del repo, montados de solo lectura. El CI los reimporta en
+      # cada deploy (git = fuente de verdad). Ver el paso "Sincronizar workflows"
+      # en .github/workflows/deploy.yml
       - ./n8n/zuk_email_agent_prototype_v1.json:/workflows/email-agent.json:ro
       - ./n8n/zuk_send_email.json:/workflows/send-email.json:ro
-    # En el PRIMER arranque (sin el archivo-marcador) importa los dos workflows
-    # y luego arranca. En reinicios posteriores no los reimporta, para no
-    # pisar los cambios hechos desde la interfaz (p.ej. la credencial de Outlook).
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - >-
-        if [ ! -f /home/node/.n8n/.workflows-imported ]; then
-        echo "n8n: primer arranque, importando workflows ...";
-        n8n import:workflow --input=/workflows/email-agent.json || true;
-        n8n import:workflow --input=/workflows/send-email.json || true;
-        touch /home/node/.n8n/.workflows-imported;
-        fi;
-        exec n8n start
 
   dashboard:
     # Se construye desde el Dockerfile de este repo.
