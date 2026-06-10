@@ -57,7 +57,7 @@
             {
               "id": "f-body",
               "name": "body",
-              "value": "={{ $json.bodyPreview || $json.body?.content }}",
+              "value": "={{ $json.body?.content || $json.bodyPreview }}",
               "type": "string"
             },
             {
@@ -96,9 +96,9 @@
       "parameters": {
         "model": {
           "__rl": true,
-          "value": "gpt-4o-mini",
+          "value": "gpt-4o",
           "mode": "list",
-          "cachedResultName": "gpt-4o-mini"
+          "cachedResultName": "gpt-4o"
         },
         "options": {
           "temperature": 0
