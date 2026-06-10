@@ -209,3 +209,4 @@ Dashboard ("Senden") → POST /api/inquiries/:id/confirmation
 The `ZUK - Send Confirmation Email` workflow must be **Published (active)** in n8n
 for the webhook to exist. Its URL base is configured via `N8N_BASE_URL` in `.env.local`.
 
+Check
