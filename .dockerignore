@@ -1,0 +1,10 @@
+# No copiar esto al contexto de build de Docker (más rápido y seguro).
+node_modules
+.next
+.git
+.env*
+npm-debug.log*
+.DS_Store
+design-reference
+README.md
+DEPLOY.md
