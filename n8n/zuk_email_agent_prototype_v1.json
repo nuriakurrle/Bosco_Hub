@@ -24,7 +24,10 @@
       "name": "New Email (Outlook Trigger)",
       "type": "n8n-nodes-base.microsoftOutlookTrigger",
       "typeVersion": 1,
-      "position": [0, 320],
+      "position": [
+        0,
+        320
+      ],
       "credentials": {
         "microsoftOutlookOAuth2Api": {
           "id": "RMRz9wntFr8TCs3X",
@@ -80,7 +83,10 @@
       "name": "Normalize Email Fields",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [220, 320]
+      "position": [
+        220,
+        320
+      ]
     },
     {
       "parameters": {
@@ -90,7 +96,10 @@
       "name": "Detect Routing",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 320]
+      "position": [
+        440,
+        320
+      ]
     },
     {
       "parameters": {
@@ -108,7 +117,10 @@
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
-      "position": [620, 540],
+      "position": [
+        620,
+        540
+      ],
       "credentials": {
         "openAiApi": {
           "id": "KNbs9IV7QsyP8Jem",
@@ -125,7 +137,10 @@
       "name": "Structured Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
-      "position": [800, 540]
+      "position": [
+        800,
+        540
+      ]
     },
     {
       "parameters": {
@@ -137,7 +152,10 @@
       "name": "Extract Booking Requests",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
-      "position": [680, 320]
+      "position": [
+        680,
+        320
+      ]
     },
     {
       "parameters": {
@@ -148,7 +166,10 @@
       "name": "Split Requests",
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
-      "position": [920, 320]
+      "position": [
+        920,
+        320
+      ]
     },
     {
       "parameters": {
@@ -205,7 +226,10 @@
       "name": "Add Email Context",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1140, 320]
+      "position": [
+        1140,
+        320
+      ]
     },
     {
       "parameters": {
@@ -234,7 +258,10 @@
       "name": "Is Info Complete?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1360, 320]
+      "position": [
+        1360,
+        320
+      ]
     },
     {
       "parameters": {
@@ -276,25 +303,120 @@
           },
           "matchingColumns": [],
           "schema": [
-            { "id": "tracker_status",          "displayName": "tracker_status",          "required": true,  "type": "string" },
-            { "id": "responsible_area",        "displayName": "responsible_area",        "required": false, "type": "string" },
-            { "id": "customer_email",          "displayName": "customer_email",          "required": false, "type": "string" },
-            { "id": "original_subject",        "displayName": "original_subject",        "required": false, "type": "string" },
-            { "id": "conversation_id",         "displayName": "conversation_id",         "required": false, "type": "string" },
-            { "id": "school_name",             "displayName": "school_name",             "required": false, "type": "string" },
-            { "id": "contact_person",          "displayName": "contact_person",          "required": false, "type": "string" },
-            { "id": "program_type",            "displayName": "program_type",            "required": false, "type": "string" },
-            { "id": "house",                   "displayName": "house",                   "required": false, "type": "string" },
-            { "id": "date_range",              "displayName": "date_range",              "required": false, "type": "string" },
-            { "id": "number_of_people",        "displayName": "number_of_people",        "required": false, "type": "string" },
-            { "id": "grade_level",             "displayName": "grade_level",             "required": false, "type": "string" },
-            { "id": "special_requirements",    "displayName": "special_requirements",    "required": false, "type": "string" },
-            { "id": "missing_fields",          "displayName": "missing_fields",          "required": false, "type": "string" },
-            { "id": "contains_sensitive_data", "displayName": "contains_sensitive_data", "required": false, "type": "boolean" },
-            { "id": "sensitive_data_note",     "displayName": "sensitive_data_note",     "required": false, "type": "string" },
-            { "id": "channel",                 "displayName": "channel",                 "required": false, "type": "string" },
-            { "id": "summary",                 "displayName": "summary",                 "required": false, "type": "string" },
-            { "id": "raw_body",                "displayName": "raw_body",                "required": false, "type": "string" }
+            {
+              "id": "tracker_status",
+              "displayName": "tracker_status",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "id": "responsible_area",
+              "displayName": "responsible_area",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "customer_email",
+              "displayName": "customer_email",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "original_subject",
+              "displayName": "original_subject",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "school_name",
+              "displayName": "school_name",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "contact_person",
+              "displayName": "contact_person",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "program_type",
+              "displayName": "program_type",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "house",
+              "displayName": "house",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "date_range",
+              "displayName": "date_range",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "number_of_people",
+              "displayName": "number_of_people",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "grade_level",
+              "displayName": "grade_level",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "special_requirements",
+              "displayName": "special_requirements",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "missing_fields",
+              "displayName": "missing_fields",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "contains_sensitive_data",
+              "displayName": "contains_sensitive_data",
+              "required": false,
+              "type": "boolean"
+            },
+            {
+              "id": "sensitive_data_note",
+              "displayName": "sensitive_data_note",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "raw_body",
+              "displayName": "raw_body",
+              "required": false,
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -303,7 +425,10 @@
       "name": "Insert: Ready for Review",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1580, 200],
+      "position": [
+        1580,
+        200
+      ],
       "credentials": {
         "postgres": {
           "id": "bjtHqY4LrBLXQHrN",
@@ -351,25 +476,120 @@
           },
           "matchingColumns": [],
           "schema": [
-            { "id": "tracker_status",          "displayName": "tracker_status",          "required": true,  "type": "string" },
-            { "id": "responsible_area",        "displayName": "responsible_area",        "required": false, "type": "string" },
-            { "id": "customer_email",          "displayName": "customer_email",          "required": false, "type": "string" },
-            { "id": "original_subject",        "displayName": "original_subject",        "required": false, "type": "string" },
-            { "id": "conversation_id",         "displayName": "conversation_id",         "required": false, "type": "string" },
-            { "id": "school_name",             "displayName": "school_name",             "required": false, "type": "string" },
-            { "id": "contact_person",          "displayName": "contact_person",          "required": false, "type": "string" },
-            { "id": "program_type",            "displayName": "program_type",            "required": false, "type": "string" },
-            { "id": "house",                   "displayName": "house",                   "required": false, "type": "string" },
-            { "id": "date_range",              "displayName": "date_range",              "required": false, "type": "string" },
-            { "id": "number_of_people",        "displayName": "number_of_people",        "required": false, "type": "string" },
-            { "id": "grade_level",             "displayName": "grade_level",             "required": false, "type": "string" },
-            { "id": "special_requirements",    "displayName": "special_requirements",    "required": false, "type": "string" },
-            { "id": "missing_fields",          "displayName": "missing_fields",          "required": false, "type": "string" },
-            { "id": "contains_sensitive_data", "displayName": "contains_sensitive_data", "required": false, "type": "boolean" },
-            { "id": "sensitive_data_note",     "displayName": "sensitive_data_note",     "required": false, "type": "string" },
-            { "id": "channel",                 "displayName": "channel",                 "required": false, "type": "string" },
-            { "id": "summary",                 "displayName": "summary",                 "required": false, "type": "string" },
-            { "id": "raw_body",                "displayName": "raw_body",                "required": false, "type": "string" }
+            {
+              "id": "tracker_status",
+              "displayName": "tracker_status",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "id": "responsible_area",
+              "displayName": "responsible_area",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "customer_email",
+              "displayName": "customer_email",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "original_subject",
+              "displayName": "original_subject",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "school_name",
+              "displayName": "school_name",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "contact_person",
+              "displayName": "contact_person",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "program_type",
+              "displayName": "program_type",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "house",
+              "displayName": "house",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "date_range",
+              "displayName": "date_range",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "number_of_people",
+              "displayName": "number_of_people",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "grade_level",
+              "displayName": "grade_level",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "special_requirements",
+              "displayName": "special_requirements",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "missing_fields",
+              "displayName": "missing_fields",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "contains_sensitive_data",
+              "displayName": "contains_sensitive_data",
+              "required": false,
+              "type": "boolean"
+            },
+            {
+              "id": "sensitive_data_note",
+              "displayName": "sensitive_data_note",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "raw_body",
+              "displayName": "raw_body",
+              "required": false,
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -378,44 +598,156 @@
       "name": "Insert: Needs Info",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1580, 440],
+      "position": [
+        1580,
+        440
+      ],
       "credentials": {
         "postgres": {
           "id": "bjtHqY4LrBLXQHrN",
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "options": {}
+      },
+      "id": "getfullemail00001",
+      "name": "Get Full Email",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        110,
+        180
+      ],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "RMRz9wntFr8TCs3X",
+          "name": "Microsoft Outlook account"
+        }
+      }
     }
   ],
   "connections": {
     "New Email (Outlook Trigger)": {
-      "main": [[ { "node": "Normalize Email Fields", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Get Full Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Normalize Email Fields": {
-      "main": [[ { "node": "Detect Routing", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Detect Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Detect Routing": {
-      "main": [[ { "node": "Extract Booking Requests", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Extract Booking Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "OpenAI Chat Model": {
-      "ai_languageModel": [[ { "node": "Extract Booking Requests", "type": "ai_languageModel", "index": 0 } ]]
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Booking Requests",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Structured Output Parser": {
-      "ai_outputParser": [[ { "node": "Extract Booking Requests", "type": "ai_outputParser", "index": 0 } ]]
+      "ai_outputParser": [
+        [
+          {
+            "node": "Extract Booking Requests",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extract Booking Requests": {
-      "main": [[ { "node": "Split Requests", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Split Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Split Requests": {
-      "main": [[ { "node": "Add Email Context", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Add Email Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Add Email Context": {
-      "main": [[ { "node": "Is Info Complete?", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Is Info Complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Is Info Complete?": {
       "main": [
-        [ { "node": "Insert: Ready for Review", "type": "main", "index": 0 } ],
-        [ { "node": "Insert: Needs Info", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Insert: Ready for Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert: Needs Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Full Email": {
+      "main": [
+        [
+          {
+            "node": "Normalize Email Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   }
