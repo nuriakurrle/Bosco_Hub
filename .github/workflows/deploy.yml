@@ -93,8 +93,10 @@ jobs:
           echo "Importando workflows..."
           $DC exec -T n8n n8n import:workflow --input=/workflows/email-agent.json || true
           $DC exec -T n8n n8n import:workflow --input=/workflows/send-email.json || true
-          # Reactiva los que estén marcados como activos en su JSON.
-          $DC exec -T n8n n8n update:workflow --all --active=true || true
+          # Publica (activa) cada workflow por su ID. En esta versión de n8n
+          # "--all" ya no existe: hay que hacerlo uno por uno con publish:workflow.
+          $DC exec -T n8n n8n publish:workflow --id=fEejzwIFeoSDGVm6 || true
+          $DC exec -T n8n n8n publish:workflow --id=zuksendmail00001 || true
           # Reinicia n8n para que cargue lo recién importado (no lo hace en caliente).
           echo "Reiniciando n8n para aplicar los cambios..."
           $DC restart n8n
