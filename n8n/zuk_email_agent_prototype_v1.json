@@ -60,7 +60,7 @@
             {
               "id": "f-body",
               "name": "body",
-              "value": "={{ $json.body?.content || $json.bodyPreview }}",
+              "value": "={{ (($json.body?.content || $json.bodyPreview) || '').replace(new RegExp('<(mailto:|https?://)[^>]*>', 'g'), '') }}",
               "type": "string"
             },
             {
