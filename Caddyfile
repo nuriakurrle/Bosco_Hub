@@ -5,7 +5,7 @@
 boscohub.duckdns.org {
 	# Pide usuario y contraseña antes de mostrar el dashboard.
 	basic_auth {
-		bosco $2a$14$TZ0r19c.dCn9Xum1MGnkuerdb38DajY1wSg689LZWx5VS13VZbrPi
+		bosco $2a$14$RJxJbVR69XWbhbHpQK.OC.04jjafevgrNU5J/YpMNMlUTP23J4ZtK
 	}
 	reverse_proxy dashboard:3000
 }
