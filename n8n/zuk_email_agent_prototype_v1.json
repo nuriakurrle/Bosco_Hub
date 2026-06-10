@@ -27,7 +27,7 @@
       "position": [0, 320],
       "credentials": {
         "microsoftOutlookOAuth2Api": {
-          "id": "pz39HKdSrd0eNmNp",
+          "id": "RMRz9wntFr8TCs3X",
           "name": "Microsoft Outlook account"
         }
       }
@@ -111,7 +111,7 @@
       "position": [620, 540],
       "credentials": {
         "openAiApi": {
-          "id": "lW4oEwYMD9bp8Ozr",
+          "id": "KNbs9IV7QsyP8Jem",
           "name": "OpenAI account"
         }
       }
@@ -306,8 +306,8 @@
       "position": [1580, 200],
       "credentials": {
         "postgres": {
-          "id": "AgxT6n3DJAUKla0C",
-          "name": "Postgres ZUK"
+          "id": "bjtHqY4LrBLXQHrN",
+          "name": "Postgres account"
         }
       }
     },
@@ -381,8 +381,8 @@
       "position": [1580, 440],
       "credentials": {
         "postgres": {
-          "id": "AgxT6n3DJAUKla0C",
-          "name": "Postgres ZUK"
+          "id": "bjtHqY4LrBLXQHrN",
+          "name": "Postgres account"
         }
       }
     }
