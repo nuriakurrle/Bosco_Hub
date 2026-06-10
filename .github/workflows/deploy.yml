@@ -89,10 +89,15 @@ jobs:
             if $DC exec -T n8n n8n --version >/dev/null 2>&1; then break; fi
             sleep 3
           done
-          # Reimporta los workflows desde git (git = fuente de verdad).
-          echo "Importando workflows..."
-          $DC exec -T n8n n8n import:workflow --input=/workflows/email-agent.json || true
-          $DC exec -T n8n n8n import:workflow --input=/workflows/send-email.json || true
+          # Copia los JSON DENTRO del contenedor con "docker compose cp" y reimporta
+          # desde ahí. IMPORTANTE: no importamos desde el mount (/workflows/...) porque
+          # al ser un mount de archivo único queda obsoleto cuando el deploy reemplaza
+          # el archivo en el host -> el contenedor seguiría viendo la versión vieja.
+          echo "Copiando e importando workflows..."
+          $DC cp n8n/zuk_email_agent_prototype_v1.json n8n:/tmp/wf1.json
+          $DC cp n8n/zuk_send_email.json n8n:/tmp/wf2.json
+          $DC exec -T n8n n8n import:workflow --input=/tmp/wf1.json || true
+          $DC exec -T n8n n8n import:workflow --input=/tmp/wf2.json || true
           # Publica (activa) cada workflow por su ID. En esta versión de n8n
           # "--all" ya no existe: hay que hacerlo uno por uno con publish:workflow.
           $DC exec -T n8n n8n publish:workflow --id=fEejzwIFeoSDGVm6 || true
