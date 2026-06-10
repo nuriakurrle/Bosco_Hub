@@ -1,7 +1,7 @@
 {
   "id": "fEejzwIFeoSDGVm6",
   "name": "ZUK - Email Booking Agent (Prototype v1)",
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
