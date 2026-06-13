@@ -168,3 +168,10 @@ CREATE TABLE IF NOT EXISTS notes (
 
 CREATE INDEX IF NOT EXISTS idx_notes_inquiry ON notes (inquiry_id);
 CREATE INDEX IF NOT EXISTS idx_notes_school  ON notes (school_name);
+
+-- ----------------------------------------------------------------
+-- Vertrags-Status je Buchung (für die Verträge-Section: Entwurf →
+-- versendet → bestätigt, mit Frist relativ zum Aufenthalt).
+-- ----------------------------------------------------------------
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_status  TEXT NOT NULL DEFAULT 'draft';
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_sent_at TIMESTAMPTZ;

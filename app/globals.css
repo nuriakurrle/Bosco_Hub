@@ -1407,3 +1407,19 @@ a { color: inherit; text-decoration: none; }
   font-family: var(--db-font-mono); font-size: 12px; line-height: 1.55; color: var(--db-text); background: var(--db-paper-2);
 }
 .modal-foot { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--db-line); }
+
+/* ───────────────────────────────────────────────
+   Verträge-Section
+   ─────────────────────────────────────────────── */
+.contracts-group { margin-top: 18px; }
+.contracts-group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.contract-row {
+  display: flex; align-items: center; gap: 16px;
+  border: 1px solid var(--db-line); border-radius: var(--db-radius); background: var(--db-paper);
+  padding: 12px 14px; box-shadow: var(--db-shadow-soft);
+}
+.contract-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+@media (max-width: 720px) {
+  .contract-row { flex-wrap: wrap; }
+  .contract-actions { width: 100%; }
+}

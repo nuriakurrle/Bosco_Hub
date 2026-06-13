@@ -11,6 +11,7 @@ const NAV = [
   { key: "dashboard", href: "/", label: "Übersicht", icon: "house" },
   { key: "inbox", href: "/posteingang", label: "Posteingang", icon: "inbox" },
   { key: "buchungen", href: "/buchungen", label: "Buchungen", icon: "bed" },
+  { key: "vertraege", href: "/vertraege", label: "Verträge", icon: "doc" },
 ];
 
 export default function Shell({ active, staff = [], me, children }) {
