@@ -1451,3 +1451,64 @@ a { color: inherit; text-decoration: none; }
 }
 .rel-head { display: flex; align-items: center; gap: 8px; color: #294b65; margin-bottom: 8px; }
 .rel-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+
+/* ───────────────────────────────────────────────
+   Dark Mode — Token-Overrides + Text-auf-Tint-Korrekturen
+   ─────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  --db-primary: #b8485c;
+  --db-primary-ink: #f0b9c3;
+  --db-primary-tint: #3a212a;
+  --db-bg: #17140f;
+  --db-paper: #201c16;
+  --db-paper-2: #272219;
+  --db-secondary: #8aa088;
+  --db-secondary-tint: #243026;
+  --db-text: #ece6da;
+  --db-text-muted: #b7ad9c;
+  --db-text-faint: #867c6c;
+  --db-line: #342f25;
+  --db-line-strong: #473f31;
+  --db-warn: #d68a3a;
+  --db-warn-tint: #382a16;
+  --db-error: #e06a62;
+  --db-error-tint: #391f1d;
+  --db-info: #6aa6cc;
+  --db-info-tint: #1c2b38;
+  --db-success: #79c07e;
+  --db-success-tint: #1d3221;
+}
+[data-theme="dark"] body { background: var(--db-bg); }
+
+/* Pills: helle Schrift auf dunklen Tints */
+[data-theme="dark"] .db-pill-success { color: #86d18c; }
+[data-theme="dark"] .db-pill-warn    { color: #e3ab63; }
+[data-theme="dark"] .db-pill-error   { color: #ef938b; }
+[data-theme="dark"] .db-pill-info    { color: #93c2e2; }
+[data-theme="dark"] .db-pill-neutral { color: #c9bfae; background: #2c281f; }
+[data-theme="dark"] .db-pill-burgundy{ color: #f0b9c3; }
+
+/* hartkodierte Text-auf-Tint-Stellen */
+[data-theme="dark"] .hl-who   { color: #93c2e2; }
+[data-theme="dark"] .hl-date  { color: #f0b9c3; }
+[data-theme="dark"] .hl-people,
+[data-theme="dark"] .hl-extra { color: #86d18c; }
+[data-theme="dark"] .hl-prog  { color: #e3ab63; }
+[data-theme="dark"] .src-tldr,
+[data-theme="dark"] .rel-head,
+[data-theme="dark"] .search-active,
+[data-theme="dark"] .note-tag.other { color: #93c2e2; }
+[data-theme="dark"] .season-banner { color: #ef938b; border-color: #5a2f2c; }
+[data-theme="dark"] .note-tag,
+[data-theme="dark"] .ms-head,
+[data-theme="dark"] .ms-list { color: #e3ab63; }
+[data-theme="dark"] .sh-head { color: #86d18c; }
+[data-theme="dark"] .missing-summary { border-color: #5a4a2a; }
+[data-theme="dark"] .school-history { border-color: #34442f; }
+[data-theme="dark"] .dup-banner,
+[data-theme="dark"] .related-banner { border-color: #4a3a40; }
+[data-theme="dark"] .cap-track, [data-theme="dark"] .cap-slot,
+[data-theme="dark"] .aside-bar-track, [data-theme="dark"] .team-bar-track { background: #34301f; }
+
+/* Suchfeld in heller Topbar → in dark dunkler Rahmen */
+[data-theme="dark"] .redact-overlay { background: rgba(23,20,15,0.6); }
