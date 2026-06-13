@@ -15,9 +15,22 @@ import SchoolHistory from "@/components/SchoolHistory";
 import NotesPanel from "@/components/NotesPanel";
 import { suggestedPerson } from "@/lib/team";
 
-export default function Detail({ item, staff = [], me, assessment, duplicate, history, notes = [] }) {
+export default function Detail({ item, staff = [], me, assessment, duplicate, history, notes = [], related = [] }) {
   const router = useRouter();
   const [activeKey, setActiveKey] = useState(null);
+
+  async function mergeWith(targetId) {
+    try {
+      await fetch(`/api/inquiries/${item.id}/merge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId }),
+      });
+      router.refresh();
+    } catch {
+      showToast("Zusammenführen fehlgeschlagen.");
+    }
+  }
   const alreadyBooked = item.trackerStatus === "booking_created";
   // If already booked, the fields are shown as confirmed (not re-checked).
   const [fields, setFields] = useState(() =>
@@ -215,6 +228,30 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                   dup={duplicate}
                   onReview={(d) => router.push(`/buchungen#booking-${d.booking.id}`)}
                 />
+              </div>
+            )}
+            {related.length > 0 && (
+              <div className="related-banner">
+                <div className="rel-head">
+                  <Icon d={I.link} size={14} />
+                  <b style={{ fontSize: 12.5 }}>Verwandte Anfragen derselben Schule</b>
+                </div>
+                {related.map((r) => (
+                  <div key={r.id} className="rel-row">
+                    <span className={`db-pill ${r.channel === "phone" ? "db-pill-burgundy" : "db-pill-info"}`}>
+                      <Icon d={r.channel === "phone" ? I.clock : I.mail} size={10} />
+                      {r.channel === "phone" ? "Telefon" : "E-Mail"}
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {r.summary} <span className="db-faint">· {r.received}</span>
+                      {r.crossChannel && <span className="note-tag other">anderer Kanal</span>}
+                    </span>
+                    <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push(`/inquiry/${r.id}`)}>öffnen</button>
+                    <button className="db-btn db-btn-sage db-btn-sm" onClick={() => mergeWith(r.id)}>
+                      <Icon d={I.link} size={11} /> zusammenführen
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
             {fields.map((f) => (

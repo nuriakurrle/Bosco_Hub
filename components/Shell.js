@@ -37,11 +37,11 @@ export default function Shell({ active, staff = [], me, children }) {
         <div className="app-nav-foot">
           <div className="app-nav-section">Team · {staff.length}</div>
           {staff.map((s) => (
-            <div key={s.key} className="app-nav-person" title={s.area || ""}>
+            <div key={s.key} className="app-nav-person" title={s.skills ? `Kann: ${s.skills.replace(/,/g, ", ")}` : s.area || ""}>
               <span className="avatar sm">{s.short}</span>
               <span className="np-text">
                 <span className="np-name">{s.name}{s.key === me ? " · ich" : ""}</span>
-                <span className="np-area">{s.area || "—"}</span>
+                <span className="np-area">{s.area || "—"}{s.skills ? ` · ${s.skills.split(",").length} Formate` : ""}</span>
               </span>
             </div>
           ))}

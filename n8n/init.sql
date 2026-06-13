@@ -175,3 +175,26 @@ CREATE INDEX IF NOT EXISTS idx_notes_school  ON notes (school_name);
 -- ----------------------------------------------------------------
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_status  TEXT NOT NULL DEFAULT 'draft';
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_sent_at TIMESTAMPTZ;
+
+-- ----------------------------------------------------------------
+-- Referenten-Skills: welche Formate eine Person betreuen kann
+-- (Interview: "spezielle Schulung für Floss/Hütte", "5 Referenten parallel").
+-- ----------------------------------------------------------------
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS skills TEXT;  -- kommasepariert
+UPDATE staff SET skills='schullandheim,sommerfreizeit,orientierung' WHERE key='vanessa' AND skills IS NULL;
+UPDATE staff SET skills='orientierung,besinnung,umwelt'             WHERE key='andrea'  AND skills IS NULL;
+UPDATE staff SET skills='seminar,gruppenleiter,orientierung'        WHERE key='steffi'  AND skills IS NULL;
+
+-- ----------------------------------------------------------------
+-- Vorbereitungs-Aufgaben je Buchung (Timeline T-8/T-4/T-2/T-1):
+-- abgeleitete Standardaufgaben, hier nur der Erledigt-Status.
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS booking_tasks (
+    id         SERIAL PRIMARY KEY,
+    booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
+    task_key   TEXT NOT NULL,
+    done       BOOLEAN NOT NULL DEFAULT FALSE,
+    done_at    TIMESTAMPTZ,
+    done_by    TEXT,
+    UNIQUE (booking_id, task_key)
+);

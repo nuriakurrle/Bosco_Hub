@@ -5,7 +5,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Icon, I } from "@/components/icons";
 import { Pill } from "@/components/ui";
-import ContractButton from "@/components/ContractDraft";
+import ContractButton, { MealButton } from "@/components/ContractDraft";
+import { computeTimeline } from "@/lib/timeline";
 import { areaColor } from "@/lib/team";
 
 const STATUS = {
@@ -19,8 +20,19 @@ const CONTRACT = {
   signed: { tone: "success", label: "Vertrag: bestätigt" },
 };
 
-export default function BookingsView({ bookings }) {
+export default function BookingsView({ bookings, tasksDone = {}, me }) {
   const [house, setHouse] = useState("all");
+  const [done, setDone] = useState(tasksDone);
+  const [expanded, setExpanded] = useState(null);
+
+  function toggleTask(bookingId, key, value) {
+    setDone((d) => ({ ...d, [bookingId]: { ...(d[bookingId] || {}), [key]: { done: value } } }));
+    fetch(`/api/bookings/${bookingId}/task`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskKey: key, done: value, by: me }),
+    }).catch(() => {});
+  }
 
   const houses = [...new Set(bookings.map((b) => b.house))];
   const shown = house === "all" ? bookings : bookings.filter((b) => b.house === house);
@@ -88,6 +100,7 @@ export default function BookingsView({ bookings }) {
               {g.items.map((b) => {
                 const st = STATUS[b.status] || { tone: "neutral", label: b.status };
                 const ct = CONTRACT[b.contractStatus] || CONTRACT.draft;
+                const tl = computeTimeline(b.startISO, done[b.id]);
                 const card = (
                   <div className="db-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 14 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -107,14 +120,39 @@ export default function BookingsView({ bookings }) {
                         <Icon d={I.users} size={11} style={{ verticalAlign: -1 }} /> {b.people}
                       </div>
                     </div>
-                    <span style={{ flexShrink: 0 }}><ContractButton booking={b} /></span>
+                    <span className="booking-actions" style={{ flexShrink: 0 }} onClick={(e) => e.preventDefault()}>
+                      <button
+                        className={`db-btn db-btn-sm ${expanded === b.id ? "db-btn-primary" : "db-btn-ghost"}`}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpanded(expanded === b.id ? null : b.id); }}
+                        title="Vorbereitung / Fristen"
+                      >
+                        <Icon d={I.clock} size={12} />
+                        {tl.overdue > 0 ? <span className="tl-badge">{tl.overdue}</span> : tl.open > 0 ? ` ${tl.open}` : " ✓"}
+                      </button>
+                      <MealButton booking={b} />
+                      <ContractButton booking={b} />
+                    </span>
                     {b.inquiryId && <Icon d={I.chevron} size={16} style={{ color: "var(--db-text-faint)", flexShrink: 0 }} />}
                   </div>
                 );
-                return b.inquiryId ? (
-                  <Link key={b.id} href={`/inquiry/${b.inquiryId}`}>{card}</Link>
-                ) : (
-                  <div key={b.id}>{card}</div>
+                return (
+                  <div key={b.id} className="booking-block">
+                    {b.inquiryId ? <Link href={`/inquiry/${b.inquiryId}`}>{card}</Link> : card}
+                    {expanded === b.id && (
+                      <div className="timeline-panel">
+                        <div className="tl-head"><Icon d={I.clock} size={13} /> Vorbereitung &amp; Fristen{tl.past ? " · Aufenthalt vergangen" : ""}</div>
+                        {tl.tasks.map((t) => (
+                          <label key={t.key} className={`tl-row ${t.done ? "done" : ""}`}>
+                            <input type="checkbox" checked={t.done} onChange={(e) => toggleTask(b.id, t.key, e.target.checked)} />
+                            <span className="tl-label">{t.label}</span>
+                            <span className="tl-due mono">{t.dueLabel}</span>
+                            {!t.done && t.hint && <Pill tone={t.tone === "neutral" ? "neutral" : t.tone} dot={t.tone === "error"}>{t.hint}</Pill>}
+                            {t.done && <Pill tone="success" dot={false}>erledigt</Pill>}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>

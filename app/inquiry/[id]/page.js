@@ -5,7 +5,8 @@ import { notFound } from "next/navigation";
 import Shell from "@/components/Shell";
 import Detail from "@/components/Detail";
 import SplitDetail from "@/components/SplitDetail";
-import { getInquiry, getConversation } from "@/lib/inquiries";
+import { getInquiry, getConversation, getInquiries } from "@/lib/inquiries";
+import { findRelatedInquiries } from "@/lib/related";
 import { getStaff, getCurrentUser } from "@/lib/staff";
 import { getOccupancy, getBookings } from "@/lib/bookings";
 import { assessInquiry } from "@/lib/availability";
@@ -34,7 +35,7 @@ export default async function InquiryPage({ params }) {
   // lib/availability.js), solange die Hausmanager-API fehlt.
   const [occupancy, bookings] = await Promise.all([getOccupancy(), getBookings()]);
   const assessments = Object.fromEntries(
-    siblings.map((s) => [s.id, assessInquiry(s, occupancy)])
+    siblings.map((s) => [s.id, assessInquiry(s, occupancy, staff)])
   );
   // Doppel-Anfrage-Erkennung gegen bereits angelegte Buchungen.
   const duplicates = Object.fromEntries(
@@ -47,13 +48,15 @@ export default async function InquiryPage({ params }) {
   const history = siblings.length > 1 ? null : await getSchoolHistory(item.school, item.id);
   // Team-Notizen (Vorgang + Schule).
   const notes = await getNotes(item.id, item.school);
+  // Mehrkanal: verwandte Anfragen derselben Schule (nur Einzelvorgang).
+  const related = siblings.length > 1 ? [] : findRelatedInquiries(item, await getInquiries());
 
   return (
     <Shell staff={staff} me={me} active="inbox">
       {siblings.length > 1 ? (
         <SplitDetail items={siblings} staff={staff} me={me} assessments={assessments} duplicates={duplicates} notes={notes} />
       ) : (
-        <Detail item={item} staff={staff} me={me} assessment={assessments[item.id]} duplicate={duplicates[item.id]} history={history} notes={notes} />
+        <Detail item={item} staff={staff} me={me} assessment={assessments[item.id]} duplicate={duplicates[item.id]} history={history} notes={notes} related={related} />
       )}
     </Shell>
   );

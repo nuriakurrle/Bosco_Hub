@@ -204,14 +204,17 @@ export function SafetyGate({ assessment, contactName, onAsk, onEstimate, onResol
           <div className={`gate-item ${s.resource.ok ? "ok" : "warn"}`}>
             <span className="gate-ico"><Icon d={I.users} size={14} /></span>
             <div style={{ flex: 1 }}>
-              <div className="gate-title">Betreuung</div>
+              <div className="gate-title">Betreuung &amp; Referent:innen</div>
               <div className="gate-sub">
                 ca. {s.resource.referentsNeeded} Referent:in{s.resource.referentsNeeded > 1 ? "nen" : ""} nötig ·
                 {" "}{s.resource.referentsAvailable} im Haus parallel möglich.
+                {s.resource.qualified != null && (
+                  <> · <b>{s.resource.qualified}</b> für „{s.resource.skill}" qualifiziert</>
+                )}
               </div>
             </div>
-            <Pill tone={s.resource.ok ? "success" : "warn"} dot={false}>
-              {s.resource.ok ? "abgedeckt" : "knapp"}
+            <Pill tone={s.resource.qualified === 0 ? "error" : s.resource.ok ? "success" : "warn"} dot={false}>
+              {s.resource.qualified === 0 ? "kein:e Referent:in" : s.resource.ok ? "abgedeckt" : "knapp"}
             </Pill>
           </div>
         )}
