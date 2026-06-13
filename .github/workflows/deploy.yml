@@ -75,6 +75,11 @@ jobs:
           cd /root/Bosco_Hub
           docker compose -f docker-compose.prod.yml up -d --build
           docker image prune -f
+          # Aplica cambios del Caddyfile (login/dominio). El mount de archivo único
+          # queda obsoleto al reemplazar el archivo, así que lo copiamos dentro del
+          # contenedor con "cp" y recargamos Caddy sin downtime.
+          docker compose -f docker-compose.prod.yml cp Caddyfile caddy:/etc/caddy/Caddyfile || true
+          docker compose -f docker-compose.prod.yml exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile || true
           ENDSSH
 
       - name: Sincronizar workflows de n8n desde git
