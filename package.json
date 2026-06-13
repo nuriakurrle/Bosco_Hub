@@ -4,7 +4,7 @@
   "private": true,
   "description": "Don Bosco / ZUK Staff Dashboard — reads the inquiries n8n extracts from emails and shows them for the team to review.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
