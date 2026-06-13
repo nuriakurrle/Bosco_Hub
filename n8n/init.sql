@@ -148,3 +148,23 @@ INSERT INTO staff (key, name, short, area) VALUES
     ('andrea',  'Andrea Sturm',   'AS', 'Aktionszentrum'),
     ('steffi',  'Steffi Lang',    'SL', 'Seminare & Web')
 ON CONFLICT (key) DO NOTHING;
+
+-- ----------------------------------------------------------------
+-- NOTES
+-- Team-Notizen: Übergabe pro Vorgang ("angerufen, wartet auf Zahlen") und
+-- zugleich schulbezogenes Wissen ("reine Mädchenklasse"). Eine Notiz hängt an
+-- einem Inquiry UND trägt den Schulnamen, damit sie bei Wiederkehrern derselben
+-- Schule wieder auftaucht.
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notes (
+    id          SERIAL PRIMARY KEY,
+    inquiry_id  INTEGER REFERENCES inquiries(id) ON DELETE SET NULL,
+    school_name TEXT,
+    author      TEXT,                      -- staff key
+    body        TEXT NOT NULL,
+    pinned      BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notes_inquiry ON notes (inquiry_id);
+CREATE INDEX IF NOT EXISTS idx_notes_school  ON notes (school_name);
