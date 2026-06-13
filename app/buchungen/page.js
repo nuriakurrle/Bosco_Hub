@@ -1,6 +1,6 @@
 // app/buchungen/page.js — "Buchungen / Hausmanager" view.
 // Server Component: reads the bookings from Postgres and shows them grouped by house.
-import Header from "@/components/Header";
+import Shell from "@/components/Shell";
 import BookingsView from "@/components/BookingsView";
 import { getBookings } from "@/lib/bookings";
 import { getStaff, getCurrentUser } from "@/lib/staff";
@@ -21,8 +21,7 @@ export default async function BuchungenPage() {
   }
 
   return (
-    <div className="db-app" style={{ fontSize: 13 }}>
-      <Header staff={staff} me={me} active="buchungen" />
+    <Shell staff={staff} me={me} active="buchungen">
       {error ? (
         <div className="db-empty">
           <p>
@@ -33,6 +32,6 @@ export default async function BuchungenPage() {
       ) : (
         <BookingsView bookings={bookings} />
       )}
-    </div>
+    </Shell>
   );
 }

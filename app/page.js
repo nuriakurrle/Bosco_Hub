@@ -1,20 +1,19 @@
-// app/page.js — Main page: the Team-Posteingang.
-// Server Component: reads Postgres (inquiries + team) and passes everything to
-// the client components.
-import Header from "@/components/Header";
-import Inbox from "@/components/Inbox";
-import { getInquiries } from "@/lib/inquiries";
+// app/page.js — Startseite: ZUK-Übersicht (Belegungs-Cockpit).
+// Server Component: aggregiert die echten Daten und reicht sie an <Dashboard/>.
+import Shell from "@/components/Shell";
+import Dashboard from "@/components/Dashboard";
+import { getDashboard } from "@/lib/dashboard";
 import { getStaff, getCurrentUser } from "@/lib/staff";
 
 export const dynamic = "force-dynamic"; // always fresh
 
 export default async function Home() {
-  let items = [];
+  let data = null;
   let staff = [];
   let me = null;
   let error = null;
   try {
-    [items, staff] = await Promise.all([getInquiries(), getStaff()]);
+    [data, staff] = await Promise.all([getDashboard(), getStaff()]);
     me = await getCurrentUser(staff);
   } catch (err) {
     console.error(err);
@@ -22,8 +21,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="db-app" style={{ fontSize: 13 }}>
-      <Header staff={staff} me={me} active="inbox" />
+    <Shell staff={staff} me={me} active="dashboard">
       {error ? (
         <div className="db-empty">
           <p>
@@ -32,11 +30,11 @@ export default async function Home() {
           <p className="db-muted" style={{ maxWidth: "46ch" }}>
             Starte den Docker-Stack von n8n, damit Postgres unter Port 5434 erreichbar ist:
           </p>
-          <code>cd n8n && docker compose up -d</code>
+          <code>cd n8n &amp;&amp; docker compose up -d</code>
         </div>
       ) : (
-        <Inbox items={items} staff={staff} me={me} />
+        <Dashboard data={data} />
       )}
-    </div>
+    </Shell>
   );
 }

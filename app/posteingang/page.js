@@ -1,0 +1,44 @@
+// app/posteingang/page.js — Team-Posteingang (vorher die Startseite).
+// Server Component: liest Postgres (inquiries + team) und reicht alles an die
+// Client-Komponenten weiter.
+import Shell from "@/components/Shell";
+import Inbox from "@/components/Inbox";
+import { getInquiries } from "@/lib/inquiries";
+import { getStaff, getCurrentUser } from "@/lib/staff";
+
+export const dynamic = "force-dynamic"; // always fresh
+
+export default async function Posteingang({ searchParams }) {
+  const sp = await searchParams;
+  const query = typeof sp?.q === "string" ? sp.q : "";
+  const filter = typeof sp?.filter === "string" ? sp.filter : "all";
+  let items = [];
+  let staff = [];
+  let me = null;
+  let error = null;
+  try {
+    [items, staff] = await Promise.all([getInquiries(), getStaff()]);
+    me = await getCurrentUser(staff);
+  } catch (err) {
+    console.error(err);
+    error = err.message;
+  }
+
+  return (
+    <Shell staff={staff} me={me} active="inbox">
+      {error ? (
+        <div className="db-empty">
+          <p>
+            <b>Keine Verbindung zur Datenbank.</b>
+          </p>
+          <p className="db-muted" style={{ maxWidth: "46ch" }}>
+            Starte den Docker-Stack von n8n, damit Postgres unter Port 5434 erreichbar ist:
+          </p>
+          <code>cd n8n && docker compose up -d</code>
+        </div>
+      ) : (
+        <Inbox items={items} staff={staff} me={me} query={query} initialFilter={filter} />
+      )}
+    </Shell>
+  );
+}

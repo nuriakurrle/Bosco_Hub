@@ -8,10 +8,16 @@ import { Icon, I } from "@/components/icons";
 import { Pill, Btn, Card } from "@/components/ui";
 import AssignControl from "@/components/AssignControl";
 import ConfirmationPanel from "@/components/ConfirmationPanel";
+import { AvailabilityCard, SafetyGate } from "@/components/Availability";
+import { Stepper, VerifyGate, DuplicateBanner, MissingSummary, nowTime } from "@/components/HitlGate";
+import EmailSource from "@/components/EmailSource";
+import SchoolHistory from "@/components/SchoolHistory";
+import NotesPanel from "@/components/NotesPanel";
 import { suggestedPerson } from "@/lib/team";
 
-export default function Detail({ item, staff = [], me }) {
+export default function Detail({ item, staff = [], me, assessment, duplicate, history, notes = [] }) {
   const router = useRouter();
+  const [activeKey, setActiveKey] = useState(null);
   const alreadyBooked = item.trackerStatus === "booking_created";
   // If already booked, the fields are shown as confirmed (not re-checked).
   const [fields, setFields] = useState(() =>
@@ -23,6 +29,10 @@ export default function Detail({ item, staff = [], me }) {
   const [editing, setEditing] = useState(null);
   const [created, setCreated] = useState(alreadyBooked);
   const [toast, setToast] = useState(null);
+  // Human-in-the-loop: Pflicht-Verifizierung + Bestätigung fehlender Infos.
+  const [verifyChecked, setVerifyChecked] = useState(alreadyBooked);
+  const [verifiedAt, setVerifiedAt] = useState(null);
+  const [missingConfirmed, setMissingConfirmed] = useState(false);
 
   // Locked = already booked: the detail becomes read-only.
   const locked = created;
@@ -30,7 +40,28 @@ export default function Detail({ item, staff = [], me }) {
   const review = fields.filter((f) => f.status === "review");
   const verified = fields.filter((f) => f.status === "verified");
   const missing = fields.filter((f) => f.status === "missing");
-  const allConfirmed = review.length === 0 && verified.length > 0;
+
+  // Klartextname für die Audit-Zeile.
+  const verifierName = staff.find((s) => s.key === me)?.name || me || "—";
+  // Pflicht-Infos müssen geklärt sein, bevor man final freigeben darf.
+  const missingResolved = missing.length === 0 || missingConfirmed;
+  const canCreate = verifyChecked && missingResolved && !created;
+
+  // Aktueller Prozess-Schritt für den Stepper.
+  const currentStep = created
+    ? 3
+    : !assignedTo
+    ? 0
+    : review.length > 0 || !missingResolved
+    ? 1
+    : !verifyChecked
+    ? 2
+    : 3;
+
+  function onVerifyToggle(v) {
+    setVerifyChecked(v);
+    setVerifiedAt(v ? nowTime() : null);
+  }
 
   function showToast(msg) {
     setToast(msg);
@@ -82,7 +113,7 @@ export default function Detail({ item, staff = [], me }) {
         body: JSON.stringify({ created_by: me }),
       });
       showToast("Buchung angelegt — Status: Anfrage. Sie können Details später ergänzen.");
-      setTimeout(() => router.push("/"), 1200);
+      setTimeout(() => router.push("/posteingang"), 1200);
     } catch {
       showToast("Konnte die Buchung nicht speichern.");
     }
@@ -92,7 +123,7 @@ export default function Detail({ item, staff = [], me }) {
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
       {/* sub-header */}
       <div style={{ padding: "12px 22px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 14 }}>
-        <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push("/")}>
+        <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push("/posteingang")}>
           <Icon d={I.chevron} size={13} style={{ transform: "rotate(180deg)" }} /> Posteingang
         </button>
         <div style={{ minWidth: 0 }}>
@@ -133,30 +164,27 @@ export default function Detail({ item, staff = [], me }) {
         </span>
       </div>
 
+      {/* Prozess-Schritte */}
+      <div style={{ padding: "8px 22px", borderBottom: "1px solid var(--db-line)", background: "var(--db-paper-2)" }}>
+        <Stepper current={currentStep} />
+      </div>
+
       {/* split */}
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
         {/* SOURCE */}
         <section className="db-scroll" style={{ flex: "1 1 52%", minWidth: 0, padding: 22, borderRight: "1px solid var(--db-line)" }}>
           <Card title={item.channel === "phone" ? "Telefonat" : "E-Mail"} kicker={item.receivedAbs}>
-            <p style={{ fontFamily: "var(--db-font-mono)", fontSize: 11, color: "var(--db-text-faint)", marginTop: 0 }}>
-              Von: {item.from}
-              {item.customerEmail ? ` · ${item.customerEmail}` : ""}
-            </p>
-            {item.subject && (
-              <p style={{ fontWeight: 600, fontSize: 13, margin: "0 0 8px" }}>{item.subject}</p>
-            )}
-            <div className="db-email">
-              {item.rawBody ? (
-                item.rawBody.split("\n").map((line, i) => <p key={i}>{line || " "}</p>)
-              ) : (
-                <p className="db-muted" style={{ fontStyle: "italic" }}>
-                  {item.channel === "phone"
-                    ? "Kein Transkript gespeichert. (Anruf-Transkription folgt in v2.)"
-                    : "Kein E-Mail-Text gespeichert. Aktiviere das Speichern von raw_body im n8n-Workflow."}
-                </p>
-              )}
-            </div>
+            <EmailSource
+              item={item}
+              fields={fields}
+              staff={staff}
+              activeKey={activeKey}
+              onMarkHover={setActiveKey}
+            />
           </Card>
+          <div style={{ marginTop: 12 }}>
+            <NotesPanel inquiryId={item.id} schoolName={item.school} me={me} initialNotes={notes} />
+          </div>
         </section>
 
         {/* EXTRACTED */}
@@ -176,8 +204,27 @@ export default function Detail({ item, staff = [], me }) {
           </div>
 
           <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "8px 14px 14px" }}>
+            {history && (
+              <div style={{ marginBottom: 10 }}>
+                <SchoolHistory history={history} />
+              </div>
+            )}
+            {duplicate && (
+              <div style={{ marginBottom: 10 }}>
+                <DuplicateBanner
+                  dup={duplicate}
+                  onReview={(d) => router.push(`/buchungen#booking-${d.booking.id}`)}
+                />
+              </div>
+            )}
             {fields.map((f) => (
-              <div key={f.id} className="ex-field" style={{ gridTemplateColumns: "18px 130px 1fr auto" }}>
+              <div
+                key={f.id}
+                className={`ex-field ${activeKey === f.key ? "active" : ""}`}
+                style={{ gridTemplateColumns: "18px 130px 1fr auto" }}
+                onMouseEnter={() => setActiveKey(f.key)}
+                onMouseLeave={() => setActiveKey(null)}
+              >
                 <span
                   className={`ex-state ${
                     f.status === "verified" ? "verified" : f.status === "missing" ? "missing" : "review"
@@ -226,54 +273,86 @@ export default function Detail({ item, staff = [], me }) {
               </div>
             ))}
 
-            {missing.length > 0 && (
-              <div className="followup" style={{ marginTop: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <Icon d={I.alert} size={14} style={{ color: "var(--db-warn)" }} />
-                  <b style={{ fontSize: 12.5, color: "#7a4a14" }}>
-                    {missing.length} Angabe{missing.length > 1 ? "n" : ""} fehlt
-                  </b>
-                </div>
-                <div className="db-muted" style={{ fontSize: 12, marginBottom: 8 }}>
-                  Fehlt: {missing.map((m) => m.label).join(", ")}. Sie können trotzdem schon eine
-                  Buchung mit Status „Anfrage" anlegen und später ergänzen.
-                </div>
-                <Btn
-                  kind="sage"
-                  size="sm"
-                  icon="send"
-                  onClick={() => showToast("Rückfrage-Entwurf wird in n8n erstellt (v2).")}
-                >
-                  Rückfrage an {item.from.split(" ")[0]} senden
-                </Btn>
+            {!locked && (
+              <div style={{ marginTop: 12 }}>
+                <MissingSummary
+                  missing={missing}
+                  contactFirstName={item.from.split(" ")[0]}
+                  requestRef={[item.school, fields.find((f) => f.key === "date_range")?.value]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  confirmed={missingConfirmed}
+                  onConfirm={setMissingConfirmed}
+                  onSend={() => showToast("Rückfrage wird über n8n versendet.")}
+                />
+              </div>
+            )}
+
+            {/* Belegungs-/Saison-Check + Zimmer-/Datenschutz-Gate (v2) */}
+            {assessment && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+                <AvailabilityCard
+                  assessment={assessment}
+                  onSelectAlternative={(alt) =>
+                    showToast(`Alternative ${alt.label} wird ${item.from.split(" ")[0]} vorgeschlagen (Entwurf in n8n).`)
+                  }
+                />
+                <SafetyGate
+                  assessment={assessment}
+                  contactName={item.from.split(" ")[0]}
+                  onAsk={() => showToast("Rückfrage zur Geschlechter-Aufteilung wird in n8n erstellt (v2).")}
+                  onEstimate={() => showToast("Schätzung übernommen — im Audit als „geschätzt“ markiert.")}
+                  onResolveSensitive={() => showToast("Sensibler Hinweis zur Kenntnis genommen.")}
+                />
               </div>
             )}
 
             {/* Customer confirmation (human-in-the-loop) */}
             <ConfirmationPanel item={item} />
+
+            {/* Pflicht-Verifizierung vor dem Anlegen */}
+            <div style={{ marginTop: 12 }}>
+              <VerifyGate
+                checked={verifyChecked}
+                onToggle={onVerifyToggle}
+                verifierName={verifierName}
+                verifiedAt={verifiedAt}
+                locked={locked || !missingResolved}
+              />
+              {!missingResolved && (
+                <div className="db-muted" style={{ fontSize: 11.5, marginTop: 6 }}>
+                  Erst die fehlenden Pflicht-Angaben oben klären oder „trotzdem fortfahren" bestätigen.
+                </div>
+              )}
+            </div>
           </div>
 
           {/* action bar */}
           <div className="db-approve-bar">
             {created ? (
               <Pill tone="success">Buchung angelegt · Status Anfrage</Pill>
-            ) : allConfirmed ? (
-              <Pill tone="success">Alle Daten bestätigt</Pill>
+            ) : verifyChecked ? (
+              <Pill tone="success">Freigegeben von {verifierName.split(" ")[0]}</Pill>
             ) : (
               <Pill tone="warn">
-                {review.length} ungeprüft{missing.length ? ` · ${missing.length} fehlt` : ""}
+                {review.length ? `${review.length} ungeprüft` : "Freigabe ausstehend"}
+                {missing.length ? ` · ${missing.length} fehlt` : ""}
               </Pill>
             )}
             <span className="db-muted" style={{ fontSize: 11.5 }}>
-              {created ? "Erscheint im Hausmanager." : "Prüfen Sie die Felder, dann anlegen."}
+              {created
+                ? "Erscheint im Hausmanager."
+                : canCreate
+                ? "Freigegeben — jetzt anlegen."
+                : "Felder prüfen und unten freigeben."}
             </span>
             <span style={{ marginLeft: "auto" }}>
               <Btn
                 kind="primary"
                 iconR="arrowRight"
-                disabled={created}
-                style={created ? { opacity: 0.5, cursor: "default" } : undefined}
-                onClick={() => !created && createBooking()}
+                disabled={!canCreate}
+                style={!canCreate ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+                onClick={() => canCreate && createBooking()}
               >
                 {created ? "Angelegt" : "Buchung anlegen"}
               </Btn>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Icon, I } from "@/components/icons";
 import { Pill } from "@/components/ui";
+import ContractButton from "@/components/ContractDraft";
 import { areaColor } from "@/lib/team";
 
 const STATUS = {
@@ -43,7 +44,7 @@ export default function BookingsView({ bookings }) {
           {groups.length === 0 && (
             <div className="db-muted" style={{ textAlign: "center", padding: 40 }}>
               Noch keine Buchungen. Lege eine im{" "}
-              <Link href="/" style={{ color: "var(--db-primary)", fontWeight: 600 }}>
+              <Link href="/posteingang" style={{ color: "var(--db-primary)", fontWeight: 600 }}>
                 Posteingang
               </Link>{" "}
               an.
@@ -80,6 +81,9 @@ export default function BookingsView({ bookings }) {
                           <Icon d={I.users} size={11} style={{ verticalAlign: -1 }} /> {b.people}
                         </div>
                       </div>
+                      <span style={{ flexShrink: 0 }}>
+                        <ContractButton booking={b} />
+                      </span>
                       {b.inquiryId && (
                         <Icon d={I.chevron} size={16} style={{ color: "var(--db-text-faint)", flexShrink: 0 }} />
                       )}
