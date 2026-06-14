@@ -3,34 +3,15 @@
 // Aktivitäten + Auslastung), aber gefüllt mit den echten ZUK-Daten.
 import Link from "next/link";
 import { Icon, I } from "@/components/icons";
-import { Pill, Card } from "@/components/ui";
+import { Pill, Card, StatCard } from "@/components/ui";
 import { Donut, AreaLine } from "@/components/Charts";
 
-const TINT = {
-  info: "var(--db-info-tint)",
-  warn: "var(--db-warn-tint)",
-  success: "var(--db-success-tint)",
-  primary: "var(--db-primary-tint)",
-};
 const INK = {
   info: "var(--db-info)",
   warn: "var(--db-warn)",
   success: "var(--db-success)",
   primary: "var(--db-primary)",
 };
-
-function StatCard({ tone, icon, label, value, sub }) {
-  return (
-    <div className="stat-card" style={{ background: TINT[tone] }}>
-      <div className="stat-ico" style={{ background: INK[tone] }}>
-        <Icon d={I[icon]} size={18} />
-      </div>
-      <div className="stat-label">{label}</div>
-      <div className="stat-value" style={{ color: INK[tone] }}>{value}</div>
-      <div className="stat-sub">{sub}</div>
-    </div>
-  );
-}
 
 const STATUS_META = {
   ready_for_review: { label: "Neu", tone: "info" },
@@ -55,7 +36,7 @@ export default function Dashboard({ data }) {
         {/* Kopf */}
         <div className="dash-head">
           <div>
-            <div className="db-kicker" style={{ color: "var(--db-primary)" }}>ZUK · Belegungs-Cockpit</div>
+            <div className="db-kicker" style={{ color: "var(--db-primary)" }}>ZUK · Tagesüberblick</div>
             <h1 className="db-h1" style={{ fontSize: 22, marginTop: 2 }}>Übersicht</h1>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -106,10 +87,6 @@ export default function Dashboard({ data }) {
               <div className="mini-stat">
                 <div className="mini-stat-label">Nicht zugewiesen</div>
                 <div className="mini-stat-val" style={{ color: "var(--db-warn)" }}>{kpis.unassigned}</div>
-              </div>
-              <div className="mini-stat">
-                <div className="mini-stat-label">Sensible Daten</div>
-                <div className="mini-stat-val" style={{ color: "var(--db-error)" }}>{kpis.sensitive}</div>
               </div>
             </div>
             <AreaLine points={series} />

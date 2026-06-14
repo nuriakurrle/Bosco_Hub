@@ -175,6 +175,9 @@ CREATE INDEX IF NOT EXISTS idx_notes_school  ON notes (school_name);
 -- ----------------------------------------------------------------
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_status  TEXT NOT NULL DEFAULT 'draft';
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_sent_at TIMESTAMPTZ;
+-- Angepasster Vertragstext (NULL = aus Buchungsdaten generieren, sonst der
+-- im Dashboard bearbeitete und gespeicherte Entwurf).
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_text    TEXT;
 
 -- ----------------------------------------------------------------
 -- Referenten-Skills: welche Formate eine Person betreuen kann

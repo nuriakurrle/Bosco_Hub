@@ -215,13 +215,6 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
                   <Icon d={I.clock} size={10} /> seit {i.waitingDays} Tagen offen
                 </Pill>
               )}
-              {i.containsSensitiveData && (
-                <span title={i.sensitiveDataNote} style={{ display: "inline-flex" }}>
-                  <Pill tone="error" dot={false}>
-                    <Icon d={I.shield} size={11} /> Sensible Daten
-                  </Pill>
-                </span>
-              )}
               <span style={{ marginLeft: "auto" }}>
                 {done ? (
                   <Pill tone="success">Buchung angelegt</Pill>
@@ -298,7 +291,7 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
           E-Mail und Telefon landen hier zusammen. Der n8n-Agent liest jede Anfrage, schlägt
           einen Bereich und eine zuständige Person vor — Sie bestätigen die Zuteilung und legen
           die Buchung an. <b>Dringende und nicht zugewiesene Anfragen stehen oben</b>, damit nichts
-          liegen bleibt.
+          liegen bleibt. <span className="db-faint">Ziel: Rückmeldung an den Kunden innerhalb von 2 Werktagen.</span>
         </p>
 
         {/* KPI-Zeile */}

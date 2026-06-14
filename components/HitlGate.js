@@ -88,55 +88,11 @@ export function DuplicateBanner({ dup, onReview }) {
   );
 }
 
-// Vorschlag für ein Platzhalter-Feld je fehlender Angabe (Mitarbeiter:in kann
-// es so direkt an die Schule schicken; die Schule füllt nur die Lücken aus).
-const FIELD_PLACEHOLDER = {
-  number_of_people: "Anzahl ____  (davon männlich ____ / weiblich ____)",
-  date_range: "Wunschzeitraum: ____. – ____.____",
-  grade_level: "Jahrgangsstufe / Alter: ____",
-  special_requirements: "Allergien / Besonderheiten / Verpflegung: ____",
-  contact_person: "Ansprechperson + Telefon: ____",
-  program_type: "Gewünschtes Programm: ____",
-  house: "Gewünschtes Haus: ____",
-  school_name: "Name der Schule/Gruppe: ____",
-};
-
-// Baut einen vorausgefüllten Rückfrage-Entwurf: jede fehlende Angabe wird als
-// ausfüllbarer Platzhalter eingefügt; bekannter Kontext oben als Bezug.
-function buildDraft(missing, contactFirstName, requestRef) {
-  const bullets = missing
-    .map((m) => `•  ${FIELD_PLACEHOLDER[m.key] || `${m.label}: ____`}`)
-    .join("\n");
-  return (
-    `Guten Tag${contactFirstName ? ` ${contactFirstName}` : ""},\n\n` +
-    `vielen Dank für Ihre Anfrage${requestRef ? ` (${requestRef})` : ""}. ` +
-    `Für die verbindliche Bearbeitung benötigen wir noch folgende Angaben — ` +
-    `bitte ergänzen Sie diese direkt:\n\n` +
-    `${bullets}\n\n` +
-    `Herzlichen Dank für die kurze Rückmeldung.\n\n` +
-    `Freundliche Grüße\nZUK Benediktbeuern`
-  );
-}
-
-// Pflicht-Übersicht fehlender Infos + Rückfrage-Composer.
-// `confirmed`/`onConfirm` vom Eltern gehalten; `onSend(text)` schickt den Entwurf.
-export function MissingSummary({ missing = [], contactFirstName, requestRef, onSend, confirmed, onConfirm }) {
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [copied, setCopied] = useState(false);
+// Pflicht-Übersicht fehlender Infos + Freigabe-Schalter. Der editierbare Rückfrage-
+// Entwurf an den Kunden liegt jetzt in FollowUpPanel (An/Betreff/Nachricht), direkt
+// darunter — `confirmed`/`onConfirm` werden vom Eltern gehalten.
+export function MissingSummary({ missing = [], confirmed, onConfirm }) {
   if (missing.length === 0) return null;
-
-  function openComposer() {
-    setDraft(buildDraft(missing, contactFirstName, requestRef));
-    setOpen(true);
-  }
-  async function copyDraft() {
-    try {
-      await navigator.clipboard.writeText(draft);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {}
-  }
 
   return (
     <div className="missing-summary">
@@ -155,33 +111,15 @@ export function MissingSummary({ missing = [], contactFirstName, requestRef, onS
         ))}
       </ul>
 
-      {!open ? (
-        <div className="ms-actions">
-          <Btn kind="sage" size="sm" icon="send" onClick={openComposer}>
-            Rückfrage an {contactFirstName || "Kontakt"} entwerfen
-          </Btn>
-          <label className="ms-confirm">
-            <input type="checkbox" checked={confirmed} onChange={(e) => onConfirm?.(e.target.checked)} />
-            Trotzdem fortfahren (als „Anfrage", Infos später ergänzen)
-          </label>
-        </div>
-      ) : (
-        <div className="composer">
-          <div className="composer-label">Rückfrage-Entwurf · anpassbar</div>
-          <textarea className="composer-text" value={draft} onChange={(e) => setDraft(e.target.value)} rows={9} />
-          <div className="ms-actions">
-            <Btn kind="primary" size="sm" icon="send" onClick={() => { onSend?.(draft); setOpen(false); }}>
-              Senden (n8n)
-            </Btn>
-            <Btn kind="ghost" size="sm" onClick={copyDraft}>
-              {copied ? "kopiert ✓" : "kopieren"}
-            </Btn>
-            <Btn kind="ghost" size="sm" onClick={() => setOpen(false)}>
-              abbrechen
-            </Btn>
-          </div>
-        </div>
-      )}
+      <div className="ms-actions">
+        <span className="db-faint" style={{ fontSize: 11.5 }}>
+          <Icon d={I.send} size={11} style={{ verticalAlign: -1 }} /> Rückfrage-E-Mail dazu unten als Entwurf.
+        </span>
+        <label className="ms-confirm">
+          <input type="checkbox" checked={confirmed} onChange={(e) => onConfirm?.(e.target.checked)} />
+          Trotzdem fortfahren (als „Anfrage", Infos später ergänzen)
+        </label>
+      </div>
     </div>
   );
 }

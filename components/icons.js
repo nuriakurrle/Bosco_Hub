@@ -45,4 +45,8 @@ export const I = {
   arrowRight: "M5 12h14M13 6l6 6-6 6",
   meal: ["M4 8h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z", "M16 9h2a2 2 0 0 1 0 4h-2", "M7 3v2M10 3v2M13 3v2"],
   flag: ["M5 21V4h11l-1.5 4L16 12H5", "M5 4v17"],
+  calendar: ["M4 7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7z", "M4 10h16", "M8 3v4M16 3v4"],
+  play: "M7 5l12 7-12 7z",
+  pause: ["M8 5v14", "M16 5v14"],
+  restart: ["M3 12a9 9 0 1 0 3-6.7", "M3 4v5h5"],
 };

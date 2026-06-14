@@ -2,7 +2,7 @@
 // Server Component: reads the bookings from Postgres and shows them grouped by house.
 import Shell from "@/components/Shell";
 import BookingsView from "@/components/BookingsView";
-import { getBookings, getAllTasksDone } from "@/lib/bookings";
+import { getBookings, getAllTasksDone, getHouses } from "@/lib/bookings";
 import { getStaff, getCurrentUser } from "@/lib/staff";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +11,11 @@ export default async function BuchungenPage() {
   let bookings = [];
   let staff = [];
   let tasksDone = {};
+  let houses = [];
   let me = null;
   let error = null;
   try {
-    [bookings, staff, tasksDone] = await Promise.all([getBookings(), getStaff(), getAllTasksDone()]);
+    [bookings, staff, tasksDone, houses] = await Promise.all([getBookings(), getStaff(), getAllTasksDone(), getHouses()]);
     me = await getCurrentUser(staff);
   } catch (err) {
     console.error(err);
@@ -31,7 +32,7 @@ export default async function BuchungenPage() {
           <code>cd n8n && docker compose up -d</code>
         </div>
       ) : (
-        <BookingsView bookings={bookings} tasksDone={tasksDone} me={me} />
+        <BookingsView bookings={bookings} tasksDone={tasksDone} me={me} houses={houses} />
       )}
     </Shell>
   );

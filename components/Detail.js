@@ -8,6 +8,7 @@ import { Icon, I } from "@/components/icons";
 import { Pill, Btn, Card } from "@/components/ui";
 import AssignControl from "@/components/AssignControl";
 import ConfirmationPanel from "@/components/ConfirmationPanel";
+import FollowUpPanel from "@/components/FollowUpPanel";
 import { AvailabilityCard, SafetyGate } from "@/components/Availability";
 import { Stepper, VerifyGate, DuplicateBanner, MissingSummary, nowTime } from "@/components/HitlGate";
 import EmailSource from "@/components/EmailSource";
@@ -133,7 +134,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
   }
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
+    <div className="detail-view" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
       {/* sub-header */}
       <div style={{ padding: "12px 22px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 14 }}>
         <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push("/posteingang")}>
@@ -148,13 +149,6 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
             <span className="db-faint" style={{ fontSize: 11 }}>
               empfangen {item.receivedAbs}
             </span>
-            {item.containsSensitiveData && (
-              <span title={item.sensitiveDataNote}>
-                <Pill tone="error" dot={false}>
-                  <Icon d={I.shield} size={11} /> Sensible Daten
-                </Pill>
-              </span>
-            )}
           </div>
           <h1 className="serif" style={{ margin: "3px 0 0", fontSize: 21, fontWeight: 500, color: "var(--db-primary-ink)" }}>
             {item.school}
@@ -216,7 +210,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
             )}
           </div>
 
-          <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "8px 14px 14px" }}>
+          <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "14px 18px 18px" }}>
             {history && (
               <div style={{ marginBottom: 10 }}>
                 <SchoolHistory history={history} />
@@ -314,20 +308,15 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
               <div style={{ marginTop: 12 }}>
                 <MissingSummary
                   missing={missing}
-                  contactFirstName={item.from.split(" ")[0]}
-                  requestRef={[item.school, fields.find((f) => f.key === "date_range")?.value]
-                    .filter(Boolean)
-                    .join(" · ")}
                   confirmed={missingConfirmed}
                   onConfirm={setMissingConfirmed}
-                  onSend={() => showToast("Rückfrage wird über n8n versendet.")}
                 />
               </div>
             )}
 
             {/* Belegungs-/Saison-Check + Zimmer-/Datenschutz-Gate (v2) */}
             {assessment && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
                 <AvailabilityCard
                   assessment={assessment}
                   onSelectAlternative={(alt) =>
@@ -339,16 +328,27 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                   contactName={item.from.split(" ")[0]}
                   onAsk={() => showToast("Rückfrage zur Geschlechter-Aufteilung wird in n8n erstellt (v2).")}
                   onEstimate={() => showToast("Schätzung übernommen — im Audit als „geschätzt“ markiert.")}
-                  onResolveSensitive={() => showToast("Sensibler Hinweis zur Kenntnis genommen.")}
                 />
               </div>
             )}
 
-            {/* Customer confirmation (human-in-the-loop) */}
-            <ConfirmationPanel item={item} />
+            {/* E-Mail-Entwürfe an den Kunden (human-in-the-loop):
+                Rückfrage bei fehlenden Infos + Kundenbestätigung. */}
+            {!locked && (
+              <div style={{ marginTop: 16 }}>
+                <FollowUpPanel
+                  item={item}
+                  missing={missing}
+                  onSend={() => showToast("Rückfrage an den Kunden wird über n8n versendet.")}
+                />
+              </div>
+            )}
+            <div style={{ marginTop: 16 }}>
+              <ConfirmationPanel item={item} />
+            </div>
 
             {/* Pflicht-Verifizierung vor dem Anlegen */}
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 16 }}>
               <VerifyGate
                 checked={verifyChecked}
                 onToggle={onVerifyToggle}

@@ -127,23 +127,21 @@ export function AvailabilityCard({ assessment, onSelectAlternative }) {
   );
 }
 
-// Zimmer- & Datenschutz-Gate (Component 4, an den Interviews ausgerichtet).
-export function SafetyGate({ assessment, contactName, onAsk, onEstimate, onResolveSensitive }) {
+// Zimmer-Gate (Component 4, an den Interviews ausgerichtet).
+export function SafetyGate({ assessment, contactName, onAsk, onEstimate }) {
   const s = assessment?.safety;
   const [genderOk, setGenderOk] = useState(false);
-  const [dataOk, setDataOk] = useState(false);
   if (!s) return null;
 
   const genderResolved = s.gender.known || genderOk;
-  const dataResolved = !s.dataProtection.sensitive || dataOk;
 
   return (
     <div className="gate-card">
       <div className="avail-head">
         <Icon d={I.shield} size={15} />
-        <span className="db-card-title">Zimmer &amp; Datenschutz</span>
+        <span className="db-card-title">Zimmer &amp; Betreuung</span>
         <span style={{ marginLeft: "auto" }}>
-          {genderResolved && dataResolved ? (
+          {genderResolved ? (
             <Pill tone="success"><Icon d={I.check} size={11} /> geklärt</Pill>
           ) : (
             <Pill tone="warn">offen</Pill>
@@ -177,27 +175,6 @@ export function SafetyGate({ assessment, contactName, onAsk, onEstimate, onResol
               </span>
             ))}
         </div>
-
-        {/* Datenschutz (DSGVO Art. 9) */}
-        {s.dataProtection.sensitive && (
-          <div className={`gate-item ${dataOk ? "ok" : "error"}`}>
-            <span className="gate-ico"><Icon d={I.shield} size={14} /></span>
-            <div style={{ flex: 1 }}>
-              <div className="gate-title">Sensible Daten · DSGVO Art. 9</div>
-              <div className="gate-sub">
-                {s.dataProtection.note || "Gesundheitsdaten mit Klarnamen erkannt."} Nur direkt
-                beteiligtes Personal — bitte nur Zahlen übernehmen, keine Namen.
-              </div>
-            </div>
-            {dataOk ? (
-              <Pill tone="success" dot={false}>bestätigt</Pill>
-            ) : (
-              <Btn kind="ghost" size="sm" onClick={() => { onResolveSensitive?.(); setDataOk(true); }}>
-                zur Kenntnis
-              </Btn>
-            )}
-          </div>
-        )}
 
         {/* Ressourcen / Referent:innen */}
         {s.resource.referentsAvailable != null && (

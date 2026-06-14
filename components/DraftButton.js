@@ -4,16 +4,31 @@
 import { useState } from "react";
 import { Icon, I } from "@/components/icons";
 
-export default function DraftButton({ booking, label, icon = "doc", kind = "secondary", title, build }) {
+export default function DraftButton({ booking, label, icon = "doc", kind = "secondary", title, build, initialText, onSave }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   function openModal(e) {
     e.preventDefault();
     e.stopPropagation();
-    setText(build(booking));
+    // Gespeicherten Text bevorzugen, sonst frisch aus den Buchungsdaten generieren.
+    setText(initialText || build(booking));
+    setSaved(false);
     setOpen(true);
+  }
+  async function save() {
+    if (!onSave) return;
+    setSaving(true);
+    try {
+      await onSave(text);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } finally {
+      setSaving(false);
+    }
   }
   async function copy() {
     try {
@@ -55,6 +70,11 @@ export default function DraftButton({ booking, label, icon = "doc", kind = "seco
                 Platzhalter ____ ergänzen · Export folgt über n8n
               </span>
               <button className="db-btn db-btn-ghost db-btn-sm" onClick={copy}>{copied ? "kopiert ✓" : "kopieren"}</button>
+              {onSave && (
+                <button className="db-btn db-btn-sage db-btn-sm" onClick={save} disabled={saving}>
+                  <Icon d={I.check} size={12} /> {saved ? "gespeichert ✓" : saving ? "speichert…" : "speichern"}
+                </button>
+              )}
               <button className="db-btn db-btn-primary db-btn-sm" onClick={print}><Icon d={I.doc} size={12} /> Drucken / PDF</button>
             </div>
           </div>

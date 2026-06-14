@@ -10,6 +10,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV = [
   { key: "dashboard", href: "/", label: "Übersicht", icon: "house" },
+  { key: "kalender", href: "/kalender", label: "Kalender", icon: "calendar" },
   { key: "inbox", href: "/posteingang", label: "Posteingang", icon: "inbox" },
   { key: "buchungen", href: "/buchungen", label: "Buchungen", icon: "bed" },
   { key: "vertraege", href: "/vertraege", label: "Verträge", icon: "doc" },
@@ -22,7 +23,7 @@ export default function Shell({ active, staff = [], me, children }) {
       <aside className="app-nav">
         <Link href="/" className="app-brand">
           <span className="mark">DB</span>
-          <span className="app-brand-name">Intake</span>
+          <span className="app-brand-name">Belegung</span>
         </Link>
 
         <nav className="app-nav-list">

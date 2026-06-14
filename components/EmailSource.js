@@ -3,19 +3,16 @@
 // für Einzel- und Mehrfach-Vorgänge. Bündelt die Lesbarkeits-Verbesserungen:
 //   • TL;DR-Zusammenfassung des Agenten
 //   • Routing-Begründung ("Erkannt → Haus · Vorschlag Person")
-//   • Sensible Daten ausgeblendet (DSGVO Art. 9) mit "Einblenden"
 //   • Telefon-Transkript sauber beschriftet
 //   • markierter Text mit Feld↔Text-Hover
-import { useState } from "react";
 import { Icon, I } from "@/components/icons";
-import { Pill } from "@/components/ui";
 import HighlightEmail from "@/components/HighlightEmail";
+import TranscriptPlayer from "@/components/TranscriptPlayer";
 import { areaLabel, areaColor, suggestedPerson } from "@/lib/team";
 
 export default function EmailSource({ item, fields, staff = [], activeKey, onMarkHover, legendCompact }) {
-  const [revealed, setRevealed] = useState(false);
   const isPhone = item.channel === "phone";
-  const sensitive = item.containsSensitiveData && !revealed;
+  const usePlayer = item.rawBody && isPhone;
 
   const area = item.responsibleArea && areaLabel(item.responsibleArea) !== "—" ? item.responsibleArea : item.house;
   const suggestKey = suggestedPerson(area, staff);
@@ -44,8 +41,8 @@ export default function EmailSource({ item, fields, staff = [], activeKey, onMar
 
       {item.subject && <p className="src-subject">{item.subject}</p>}
 
-      {/* Markierungs-Legende */}
-      {item.rawBody && (
+      {/* Markierungs-Legende (nur für E-Mail-Markierung, nicht für den Player) */}
+      {item.rawBody && !usePlayer && (
         <div className="hl-legend">
           <span className="hl-key"><i className="hl hl-who" /> Schule/Kontakt</span>
           <span className="hl-key"><i className="hl hl-date" /> Zeitraum</span>
@@ -55,22 +52,12 @@ export default function EmailSource({ item, fields, staff = [], activeKey, onMar
         </div>
       )}
 
-      {/* Body */}
-      {item.rawBody ? (
-        <div className={`src-body ${sensitive ? "redacted" : ""}`}>
+      {/* Body — Telefon: abspielbares Transkript; E-Mail: markierter Text */}
+      {usePlayer ? (
+        <TranscriptPlayer text={item.rawBody} fields={fields} />
+      ) : item.rawBody ? (
+        <div className="src-body">
           <HighlightEmail body={item.rawBody} fields={fields} activeKey={activeKey} onMarkHover={onMarkHover} />
-          {sensitive && (
-            <div className="redact-overlay">
-              <Icon d={I.shield} size={20} />
-              <div style={{ fontWeight: 700, fontSize: 12.5 }}>Sensible Daten ausgeblendet</div>
-              <div className="db-muted" style={{ fontSize: 11.5, maxWidth: "40ch", textAlign: "center" }}>
-                {item.sensitiveDataNote || "Gesundheitsdaten · DSGVO Art. 9."} Nur für berechtigtes Personal.
-              </div>
-              <button className="db-btn db-btn-secondary db-btn-sm" onClick={() => setRevealed(true)}>
-                <Icon d={I.shield} size={12} /> Einblenden
-              </button>
-            </div>
-          )}
         </div>
       ) : (
         <div className="db-email">
@@ -79,12 +66,6 @@ export default function EmailSource({ item, fields, staff = [], activeKey, onMar
               ? "Kein Transkript gespeichert. (Anruf-Transkription folgt über n8n.)"
               : "Kein E-Mail-Text gespeichert. Aktiviere das Speichern von raw_body im n8n-Workflow."}
           </p>
-        </div>
-      )}
-
-      {item.containsSensitiveData && revealed && (
-        <div style={{ marginTop: 6 }}>
-          <Pill tone="error" dot={false}><Icon d={I.shield} size={11} /> Sensible Daten sichtbar · DSGVO Art. 9</Pill>
         </div>
       )}
     </div>

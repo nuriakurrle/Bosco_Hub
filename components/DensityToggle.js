@@ -22,9 +22,13 @@ export default function DensityToggle() {
   }
 
   return (
-    <button className="db-chip" onClick={toggle} title="Anzeigedichte umschalten">
+    <button
+      className="db-chip"
+      onClick={toggle}
+      title={compact ? "Mehr Zeilen sichtbar — klicken für luftigere Ansicht" : "Luftige Ansicht — klicken für mehr Zeilen"}
+    >
       <Icon d={I.more} size={14} />
-      {compact ? "Kompakt" : "Komfort"}
+      Ansicht: {compact ? "Kompakt" : "Komfort"}
     </button>
   );
 }

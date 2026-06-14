@@ -259,6 +259,9 @@ body {
 .db-h3 { font-size: 13px; font-weight: 600; letter-spacing: -0.005em; margin: 0; }
 .db-muted { color: var(--db-text-muted); }
 .db-faint { color: var(--db-text-faint); }
+/* Inline-Textlink auf Button-Basis (z. B. „Filter zurücksetzen"). */
+.db-link { background: none; border: none; padding: 0; font: inherit; color: var(--db-primary); font-weight: 600; cursor: pointer; }
+.db-link:hover { text-decoration: underline; }
 
 /* Inbox table-ish list */
 .db-row-item {
@@ -452,6 +455,22 @@ body {
 .tr-mark.lowconf { background: #f6dfdd; border-bottom-color: #c77; }
 
 /* Extraction field rows */
+/* Detailseite — Luft-/Abstands-Pass (gescoped, lässt andere Seiten unberührt) */
+.detail-view .ex-field { padding: 9px 10px; gap: 11px; grid-template-columns: 18px 124px 1fr auto; }
+.detail-view .ex-group-title { padding: 15px 0 7px; }
+.detail-view .ex-field .ex-label { font-size: 12px; }
+.detail-view .ex-field .ex-value { font-size: 13.5px; }
+.detail-view .db-card-body { padding: 14px 16px; }
+.detail-view .db-card-header { padding: 13px 16px 9px; }
+.detail-view .transcript { gap: 4px; }
+/* Mehrfach-Anfrage-Karten (SplitDetail) — mehr Luft */
+.detail-view .split-req { padding: 14px 16px; gap: 10px; }
+.detail-view .split-kv { font-size: 12.5px; }
+/* Im Kompakt-Modus die zusätzliche Luft wieder zurücknehmen */
+.compact .detail-view .ex-field { padding: 6px 8px; }
+.compact .detail-view .db-card-body { padding: 10px 12px; }
+.compact .detail-view .split-req { padding: 11px 13px; gap: 7px; }
+
 .ex-group { margin-bottom: 4px; }
 .ex-group-title {
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
@@ -1097,15 +1116,16 @@ a { color: inherit; text-decoration: none; }
 /* Stat-Karten */
 .dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
 .stat-card {
-  border: 1px solid var(--db-line); border-radius: var(--db-radius);
-  padding: 14px 16px; box-shadow: var(--db-shadow-soft); position: relative; overflow: hidden;
+  background: var(--db-paper); border: 1px solid var(--db-line);
+  border-left: 3px solid var(--stat-ink, var(--db-line)); border-radius: var(--db-radius);
+  padding: 12px 15px; box-shadow: var(--db-shadow-soft);
+  display: flex; flex-direction: column; gap: 2px;
 }
-.stat-ico {
-  width: 34px; height: 34px; border-radius: 9px; color: #fff;
-  display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px;
-}
+.stat-card.active { box-shadow: 0 0 0 2px var(--stat-ink) inset, var(--db-shadow-soft); }
+.stat-head { display: flex; align-items: center; gap: 7px; }
+.stat-ico { color: var(--stat-ink); display: inline-flex; }
 .stat-label { font-size: 11.5px; color: var(--db-text-muted); font-weight: 600; }
-.stat-value { font-size: 30px; font-weight: 700; line-height: 1.1; margin: 2px 0; font-variant-numeric: tabular-nums; }
+.stat-value { font-size: 27px; font-weight: 700; line-height: 1.15; color: var(--stat-ink); font-variant-numeric: tabular-nums; }
 .stat-sub { font-size: 11.5px; color: var(--db-text-muted); }
 
 /* Reihe 2: Donut + Linie */
@@ -1188,12 +1208,6 @@ a { color: inherit; text-decoration: none; }
 .src-subject { font-weight: 600; font-size: 13px; margin: 0 0 8px; }
 
 .src-body { position: relative; }
-.src-body.redacted .db-email-hl { filter: blur(5px); user-select: none; pointer-events: none; opacity: .7; }
-.redact-overlay {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 8px; text-align: center;
-  background: rgba(247,245,240,0.55); color: var(--db-error); border-radius: 8px;
-}
 
 /* aktive Verknüpfung Feld ↔ Markierung */
 .hl.active { outline: 2px solid var(--db-primary); outline-offset: 1px; }
@@ -1408,6 +1422,60 @@ a { color: inherit; text-decoration: none; }
 }
 .modal-foot { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--db-line); }
 
+/* Telefon-Transkript-Player (nach Intake-Prototyp) */
+.call-src { display: flex; flex-direction: column; }
+.audio-player { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--db-primary); color: #fbf6e9; border-radius: 10px; }
+.audio-play-btn { width: 38px; height: 38px; border-radius: 999px; flex-shrink: 0; background: rgba(255,255,255,0.16); border: none; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .12s; }
+.audio-play-btn:hover { background: rgba(255,255,255,0.26); }
+.waveform { flex: 1; height: 30px; display: flex; align-items: center; gap: 2px; cursor: pointer; min-width: 0; }
+.waveform .bar { flex: 1; background: rgba(255,255,255,0.28); border-radius: 1px; min-width: 1px; transition: background .08s, height .08s; }
+.waveform .bar.played { background: #f1d9b0; }
+.audio-time { font-family: var(--db-font-mono); font-size: 11.5px; white-space: nowrap; opacity: .92; }
+
+.transcript { display: flex; flex-direction: column; gap: 2px; max-height: 420px; overflow-y: auto; }
+.tr-seg { display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 8px; border-radius: 7px; cursor: pointer; transition: background .1s; }
+.tr-seg:hover { background: var(--db-paper-2); }
+.tr-seg.current { background: var(--db-primary-tint); }
+.tr-meta { text-align: right; }
+.tr-time { font-family: var(--db-font-mono); font-size: 10.5px; color: var(--db-text-faint); }
+.tr-spk { font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-top: 1px; }
+.tr-spk.staff { color: var(--db-secondary); }
+.tr-spk.caller { color: var(--db-primary); }
+.tr-text { font-size: 13px; line-height: 1.55; color: var(--db-text); }
+.tr-mark { background: #fff4c5; border-bottom: 1.5px dotted #b89a2a; border-radius: 2px; padding: 0 2px; }
+[data-theme="dark"] .tr-mark { background: #5a4a1e; border-bottom-color: #b89a2a; color: #fbf6e9; }
+
+/* Küchenplan-Tabelle im Modal */
+.meal-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.meal-table th, .meal-table td { border: 1px solid var(--db-line); padding: 6px 9px; text-align: left; }
+.meal-table th { background: var(--db-paper-2); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--db-text-muted); }
+.meal-table td.num, .meal-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.meal-table td.zero { color: var(--db-text-faint); }
+.meal-table tr.meal-total td { font-weight: 700; background: var(--db-paper-2); }
+.meal-daydot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.meal-diet { margin-top: 16px; }
+.meal-diet-head { font-size: 12.5px; font-weight: 700; margin-bottom: 8px; }
+.meal-diet-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.meal-diet-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--db-text-muted); }
+.meal-diet-grid input {
+  font-family: var(--db-font-sans); font-size: 13px; color: var(--db-text); text-align: center;
+  background: var(--db-paper-2); border: 1px solid var(--db-line); border-radius: var(--db-radius-sm);
+  padding: 7px 9px; outline: none; box-sizing: border-box; width: 100%;
+}
+.meal-diet-grid input:focus { border-color: var(--db-primary); }
+@media (max-width: 620px) { .meal-diet-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* Buchung-bearbeiten-Formular im Modal */
+.cform { padding: 16px; overflow: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.cform .full { grid-column: 1 / -1; }
+.cform label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--db-text-muted); }
+.cform input, .cform select {
+  font-family: var(--db-font-sans); font-size: 13px; color: var(--db-text);
+  background: var(--db-paper-2); border: 1px solid var(--db-line); border-radius: var(--db-radius-sm);
+  padding: 7px 9px; outline: none; box-sizing: border-box; width: 100%;
+}
+.cform input:focus, .cform select:focus { border-color: var(--db-primary); }
+
 /* ───────────────────────────────────────────────
    Verträge-Section
    ─────────────────────────────────────────────── */
@@ -1443,6 +1511,7 @@ a { color: inherit; text-decoration: none; }
 .tl-row.done .tl-label { color: var(--db-text-faint); text-decoration: line-through; }
 .tl-label { flex: 1; min-width: 0; }
 .tl-due { font-size: 11.5px; color: var(--db-text-muted); }
+.tl-followup { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--db-line); }
 
 .related-banner {
   border: 1px solid #cdb9c0; border-left: 3px solid var(--db-info);
@@ -1510,5 +1579,83 @@ a { color: inherit; text-decoration: none; }
 [data-theme="dark"] .cap-track, [data-theme="dark"] .cap-slot,
 [data-theme="dark"] .aside-bar-track, [data-theme="dark"] .team-bar-track { background: #34301f; }
 
-/* Suchfeld in heller Topbar → in dark dunkler Rahmen */
-[data-theme="dark"] .redact-overlay { background: rgba(23,20,15,0.6); }
+/* ───────────────────────────────────────────────
+   Belegungs-Kalender (Monatsraster)
+   ─────────────────────────────────────────────── */
+.cal-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.cal-nav { display: flex; align-items: center; gap: 5px; }
+.cal-title { font-size: 18px; font-weight: 700; min-width: 150px; font-family: var(--db-font-serif); }
+
+.cal-grid { border: 1px solid var(--db-line); border-radius: var(--db-radius); overflow: hidden; background: var(--db-paper); box-shadow: var(--db-shadow-soft); }
+.cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--db-paper-2); border-bottom: 1px solid var(--db-line); }
+.cal-weekday { padding: 7px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--db-text-muted); }
+.cal-weekday.we { color: var(--db-text-faint); }
+
+.cal-week { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 22px; min-height: 96px; border-bottom: 1px solid var(--db-line); padding-bottom: 4px; }
+.cal-week:last-child { border-bottom: none; }
+.cal-bg { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(7, 1fr); pointer-events: none; }
+.cal-cell { border-left: 1px solid var(--db-line); }
+.cal-cell:first-child { border-left: none; }
+.cal-cell.we { background: color-mix(in srgb, var(--db-text) 3%, transparent); }
+.cal-cell.today { background: var(--db-primary-tint); }
+/* Auslastungs-Heatmap: Tageszelle nach Belegung einfärben (ok = ohne Tönung,
+   eng = gelb, voll = rot, überbucht = kräftiges Rot). Liegt nach .we/.today,
+   damit eine belegte Zelle die Tönung gewinnt — „heute" bleibt am fetten Datum erkennbar. */
+.cal-cell.load-tight { background: color-mix(in srgb, var(--db-warn) 18%, transparent); }
+.cal-cell.load-full  { background: color-mix(in srgb, var(--db-error) 15%, transparent); }
+.cal-cell.load-over  { background: color-mix(in srgb, var(--db-error) 28%, transparent); }
+
+.cal-daynum { display: flex; align-items: center; justify-content: space-between; padding: 4px 7px 0; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--db-text); position: relative; z-index: 1; }
+.cal-daynum.dim { color: var(--db-text-faint); }
+.cal-daynum.today > span:first-child { font-weight: 800; color: var(--db-primary); }
+/* Tages-Auslastung (parallele Gruppen) */
+.cal-load { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center; }
+.cal-load.ok { background: var(--db-paper-2); color: var(--db-text-muted); }
+.cal-load.tight { background: var(--db-warn-tint); color: #7a4a14; }
+.cal-load.full { background: var(--db-error); color: #fff; }
+/* Überbucht = jenseits voll: dunkleres Maroon + Ring, klar von „voll" zu unterscheiden. */
+.cal-load.over { background: #6f1717; color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.45); }
+
+/* Auslastungs-Hinweis über dem Raster */
+.cal-loadnote { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; }
+.cal-loadnote-flags { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.cal-metric { display: inline-flex; align-items: center; gap: 3px; }
+.cal-metric-btn { font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--db-line); background: var(--db-paper); color: var(--db-text-muted); cursor: pointer; }
+.cal-metric-btn.active { background: var(--db-primary); border-color: var(--db-primary); color: #fff; }
+
+.cal-bar {
+  position: relative; z-index: 1; margin: 1px 4px; height: 19px;
+  border: 1px solid; border-left-width: 3px; border-radius: 5px;
+  display: flex; align-items: center; gap: 5px; padding: 0 7px;
+  font-size: 11px; font-weight: 600; color: var(--db-text); overflow: hidden;
+}
+.cal-bar.cont-l { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-style: dashed; margin-left: 0; }
+.cal-bar.cont-r { border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: 0; }
+.cal-bar-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.cal-bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-bar-num { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--db-text-muted); flex-shrink: 0; }
+
+.cal-legend { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 11.5px; color: var(--db-text-muted); }
+.cal-legend-group { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cal-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend-swatch { width: 16px; height: 12px; border-radius: 3px; border: 1px solid; border-left-width: 3px; }
+.cal-legend-load { width: 14px; height: 12px; border-radius: 3px; border: 1px solid var(--db-line); }
+.cal-legend-sep { width: 1px; height: 14px; background: var(--db-line); }
+
+@media (max-width: 720px) {
+  .cal-week { min-height: 78px; }
+  .cal-bar-num { display: none; }
+}
+
+/* Kapazität je Format */
+.cal-resource { margin-top: 18px; border: 1px solid var(--db-line); border-radius: var(--db-radius); background: var(--db-paper); box-shadow: var(--db-shadow-soft); padding: 14px 16px; }
+.cal-res-head { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.cal-res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 24px; }
+.cal-res-row { display: flex; align-items: center; gap: 10px; }
+.cal-res-label { font-size: 12.5px; min-width: 120px; }
+.cal-res-bar-track { flex: 1; height: 7px; border-radius: 4px; background: var(--db-paper-2); overflow: hidden; }
+.cal-res-bar { display: block; height: 100%; border-radius: 4px; background: var(--db-success); }
+.cal-res-bar.thin { background: var(--db-warn); }
+.cal-res-n { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 14px; text-align: right; color: var(--db-text-muted); }
+.cal-res-foot { margin-top: 11px; font-size: 11.5px; }
+@media (max-width: 720px) { .cal-res-grid { grid-template-columns: 1fr; } }

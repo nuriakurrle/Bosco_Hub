@@ -76,7 +76,7 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
   const splitStep = allDone ? 3 : !assignedTo ? 0 : allVerified ? 3 : 2;
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
+    <div className="detail-view" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
       {/* sub-header */}
       <div style={{ padding: "12px 22px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 14 }}>
         <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push("/posteingang")}>
@@ -150,7 +150,7 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
 
           <div
             className="db-scroll"
-            style={{ flex: 1, minHeight: 0, padding: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignContent: "start" }}
+            style={{ flex: 1, minHeight: 0, padding: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignContent: "start" }}
           >
             {items.map((s, idx) => {
               const isDone = done[s.id];
