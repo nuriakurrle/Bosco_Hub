@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Icon, I } from "@/components/icons";
 import SearchBox from "@/components/SearchBox";
 import UserSwitcher from "@/components/UserSwitcher";
-import DensityToggle from "@/components/DensityToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV = [
@@ -56,7 +55,6 @@ export default function Shell({ active, staff = [], me, children }) {
           <SearchBox />
           <span style={{ flex: 1 }} />
           <ThemeToggle />
-          <DensityToggle />
           <UserSwitcher staff={staff} me={me} />
         </div>
         <div className="app-content">{children}</div>
