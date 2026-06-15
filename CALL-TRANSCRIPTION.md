@@ -250,12 +250,14 @@ The interviews stress this: health/allergy data is a **special category** (Art. 
 | **Complement** | Voicemail ("mobile box") → near-live transcription | For after-hours calls that hit the mailbox — the client said these could be processed automatically. |
 
 
-## Open decisions (to confirm with the client)
+## Decisions (confirmed with the client, 2026-06-15)
 
-1. **Telephony today** — what system does the secretariat use to take calls
-   (mobile, VoIP/PBX, landline)? This decides forwarding vs porting vs SIPREC.
-2. **DSGVO routing** — is Twilio EU region acceptable, or do they require audio to
-   never leave an EU provider (→ SIPREC on an EU PBX)?
-3. **Which screen shows which call** — with 5 people, route the live transcript to
-   the operator who answered (Twilio knows the target), or a shared "call in
-   progress" view.
+1. **Telephony** — the secretariat works from **mobile phones**. In production the
+   mobiles are **forwarded to Twilio** (call forwarding); the operator still answers
+   on their own phone, Twilio bridges and copies the audio.
+2. **DSGVO routing** — **Twilio EU region** (Frankfurt/Ireland) is accepted. No
+   SIPREC needed; audio stays in the EU.
+3. **Which screen shows which call** — **private to the operator who answers** the
+   live transcript; on hang-up the Anfrage lands in the **shared Posteingang** (as
+   today). Each mobile ↔ person is mapped once in Twilio so the live view goes to
+   the right screen.

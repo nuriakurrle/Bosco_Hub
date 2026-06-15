@@ -46,12 +46,12 @@ export default function LiveCall() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [segments]);
 
-  function answer(scenario = "complete") {
-    // Reinicia el estado y abre el SSE (simula contestar la llamada).
+  function startStream(url) {
+    // Reinicia el estado y abre el SSE (mock con guion, o transcripción real).
     esRef.current?.close();
     setSegments([]); setFields({}); setSensitiveNote(null);
     setSuggestion(null); setShowSensitive(false);
-    const es = new EventSource(`/api/live-call/stream?scenario=${scenario}`);
+    const es = new EventSource(url);
     esRef.current = es;
     es.onmessage = (e) => {
       const msg = JSON.parse(e.data);
@@ -60,10 +60,17 @@ export default function LiveCall() {
       else if (msg.type === "fields") setFields((f) => ({ ...f, ...msg.fields }));
       else if (msg.type === "sensitive") setSensitiveNote(msg.note);
       else if (msg.type === "suggestion") setSuggestion(msg.text);
+      else if (msg.type === "error") { setToast(msg.message); es.close(); setStatus("ended"); }
       else if (msg.type === "done") es.close();
     };
     es.onerror = () => { es.close(); setStatus("ended"); };
   }
+
+  // Demo con guion fijo (sin coste).
+  const answer = (scenario = "complete") =>
+    startStream(`/api/live-call/stream?scenario=${scenario}`);
+  // IA real: transcribe un archivo de live-call/samples/ (Whisper + gpt-4o-mini).
+  const answerReal = () => startStream("/api/live-call/transcribe");
 
   function hangup() {
     esRef.current?.close();
@@ -131,6 +138,9 @@ export default function LiveCall() {
               <Btn kind="secondary" size="sm" onClick={() => answer("incomplete")}>
                 Beispiel: unvollständig
               </Btn>
+              <Btn kind="secondary" size="sm" onClick={answerReal}>
+                Echte Aufnahme
+              </Btn>
               <Btn kind="sage" icon="clock" onClick={() => answer("complete")}>
                 {status === "ended" ? "Neuer Anruf" : "Anruf annehmen"}
               </Btn>
@@ -157,7 +167,7 @@ export default function LiveCall() {
                 <div key={i} className={`tr-seg ${i === segments.length - 1 ? "flash" : ""}`}>
                   <div className="tr-meta">
                     <div className="tr-time">{seg.t}</div>
-                    <div className={`tr-spk ${seg.spk}`}>{SPK_LABEL[seg.spk]}</div>
+                    {seg.spk && <div className={`tr-spk ${seg.spk}`}>{SPK_LABEL[seg.spk]}</div>}
                   </div>
                   <div className="tr-text">
                     {seg.tokens.map((tk, j) => {
