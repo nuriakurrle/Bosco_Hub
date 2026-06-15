@@ -95,6 +95,7 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
   const [cursor, setCursor] = useState({ y: today.getFullYear(), m: today.getMonth() });
   const [house, setHouse] = useState("all");
   const [metric, setMetric] = useState("groups"); // "groups" | "beds"
+  const [showResource, setShowResource] = useState(false); // Referenten-Kapazität ein-/ausgeklappt
 
   // Startmonat optional aus der URL (?m=YYYY-MM) — teilbar/deep-linkbar.
   // Per useEffect (nicht im Initial-State), um Hydration-Mismatch zu vermeiden.
@@ -256,16 +257,15 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
       <div className="dash-inner" style={{ maxWidth: 1320 }}>
         <div className="db-kicker" style={{ color: "var(--db-primary)" }}>Belegung · Zeitplan</div>
         <h1 className="db-h1" style={{ fontSize: 22, marginTop: 2 }}>Kalender</h1>
-        <p className="db-muted" style={{ fontSize: 13, margin: "4px 0 10px", maxWidth: "64ch" }}>
-          Alle Buchungen mit festem Zeitraum auf einen Blick — wer wann in welchem Haus ist.
-          Jeder Balken ist eine Gruppe; die Farbe steht für das Haus.
+        <p className="db-muted" style={{ fontSize: 13, margin: "4px 0 10px", maxWidth: "70ch" }}>
+          Wer ist wann in welchem Haus — jeder Balken eine Gruppe, Farbe steht für das Haus.
         </p>
 
         {/* Betten-Kapazität der Häuser (Schätzwerte) */}
         {houseCaps.length > 0 && (
           <div className="db-faint" style={{ fontSize: 12, margin: "0 0 14px", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <Icon d={I.bed} size={12} style={{ verticalAlign: -2 }} />
-            <span>Kapazität:</span>
+            <span>Betten-Kapazität:</span>
             {house === "all" ? (
               <>
                 {houseCaps.map((x) => (
@@ -342,19 +342,14 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
 
           {weeks.map((days, wi) => (
             <div key={wi} className="cal-week">
-              {/* Hintergrund: Spaltenlinien + Auslastungs-Heatmap (Zelle nach Belegung
-                  eingefärbt) + Heute/Wochenend-Markierung */}
+              {/* Hintergrund: Spaltenlinien + Heute/Wochenend-Markierung.
+                  (Auslastung steht als Zahl-Badge im Tageskopf — keine Zell-Tönung,
+                  damit die Hausfarben der Balken klar lesbar bleiben.) */}
               <div className="cal-bg">
                 {days.map((d, di) => {
                   const isToday = sameDay(d, today);
                   const we = di >= 5;
-                  const lvl = dayLevel(dayValue(d));
-                  return (
-                    <div
-                      key={di}
-                      className={`cal-cell${we ? " we" : ""}${lvl !== "ok" ? ` load-${lvl}` : ""}${isToday ? " today" : ""}`}
-                    />
-                  );
+                  return <div key={di} className={`cal-cell${we ? " we" : ""}${isToday ? " today" : ""}`} />;
                 })}
               </div>
               {/* Tageszahlen + Tages-Auslastung */}
@@ -415,9 +410,10 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
           </span>
           <span className="cal-legend-sep" />
           <span className="cal-legend-group">
-            <span className="cal-legend-item"><span className="cal-legend-load" style={{ background: "color-mix(in srgb, var(--db-warn) 18%, transparent)" }} /> eng</span>
-            <span className="cal-legend-item"><span className="cal-legend-load" style={{ background: "color-mix(in srgb, var(--db-error) 15%, transparent)" }} /> voll</span>
-            <span className="cal-legend-item"><span className="cal-legend-load" style={{ background: "color-mix(in srgb, var(--db-error) 28%, transparent)" }} /> überbucht</span>
+            <span className="db-faint" style={{ fontSize: 11 }}>Auslastung (Zahl je Tag):</span>
+            <span className="cal-legend-item"><span className="cal-legend-load" style={{ background: "var(--db-warn-tint)" }} /> eng</span>
+            <span className="cal-legend-item"><span className="cal-legend-load" style={{ background: "var(--db-error)" }} /> voll</span>
+            <span className="cal-legend-item"><span className="cal-legend-load" style={{ background: "#6f1717" }} /> überbucht</span>
           </span>
           <span className="cal-legend-sep" />
           <span className="cal-legend-group">
@@ -439,25 +435,40 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
           </div>
         )}
 
-        {/* Kapazität je Format — wer kann was, mit Vertretungs-Warnung */}
+        {/* Referenten-Kapazität je Format — einklappbar, damit der Kalender im Fokus bleibt */}
         <div className="cal-resource">
-          <div className="cal-res-head"><Icon d={I.users} size={14} /> Kapazität je Format · wer kann was</div>
-          <div className="cal-res-grid">
-            {formatCap.map((f) => (
-              <div key={f.key} className="cal-res-row">
-                <span className="cal-res-label">{f.label}</span>
-                <span className="cal-res-bar-track">
-                  <span className={`cal-res-bar${f.n < 2 ? " thin" : ""}`} style={{ width: `${(f.n / maxCap) * 100}%` }} />
-                </span>
-                <span className="cal-res-n">{f.n}</span>
-                {f.n < 2 && <Pill tone="warn" dot={false}>nur 1 · keine Vertretung</Pill>}
+          <button
+            className="cal-res-head"
+            onClick={() => setShowResource((v) => !v)}
+            style={{ width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}
+          >
+            <Icon d={I.users} size={14} /> Referenten-Kapazität je Format · wer kann was
+            {(() => {
+              const noBackup = formatCap.filter((f) => f.n < 2).length;
+              return noBackup > 0 ? <Pill tone="warn" dot={false}>{noBackup}× keine Vertretung</Pill> : null;
+            })()}
+            <Icon d={I.chevron} size={14} style={{ marginLeft: "auto", transform: showResource ? "rotate(90deg)" : "none", transition: "transform .15s" }} />
+          </button>
+          {showResource && (
+            <>
+              <div className="cal-res-grid" style={{ marginTop: 10 }}>
+                {formatCap.map((f) => (
+                  <div key={f.key} className="cal-res-row">
+                    <span className="cal-res-label">{f.label}</span>
+                    <span className="cal-res-bar-track">
+                      <span className={`cal-res-bar${f.n < 2 ? " thin" : ""}`} style={{ width: `${(f.n / maxCap) * 100}%` }} />
+                    </span>
+                    <span className="cal-res-n">{f.n}</span>
+                    {f.n < 2 && <Pill tone="warn" dot={false}>nur 1 · keine Vertretung</Pill>}
+                  </div>
+                ))}
+                {formatCap.length === 0 && <div className="db-muted" style={{ fontSize: 12 }}>Keine Referenten-Skills hinterlegt.</div>}
               </div>
-            ))}
-            {formatCap.length === 0 && <div className="db-muted" style={{ fontSize: 12 }}>Keine Referenten-Skills hinterlegt.</div>}
-          </div>
-          <div className="cal-res-foot db-faint">
-            Aus den hinterlegten Referenten-Skills. „Keine Vertretung" = nur eine Person kann das Format — bei Krankheit ein Ausfallrisiko.
-          </div>
+              <div className="cal-res-foot db-faint">
+                Aus den hinterlegten Referenten-Skills. „Keine Vertretung" = nur eine Person kann das Format — bei Krankheit ein Ausfallrisiko.
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

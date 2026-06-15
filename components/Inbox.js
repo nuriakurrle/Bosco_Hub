@@ -149,7 +149,6 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
   const nUnassigned = groups.filter((g) => !g.primary.assignedTo).length;
   const nMine = groups.filter((g) => g.primary.assignedTo === me).length;
   const nUrgent = groups.filter((g) => urgencyOf(g) === "urgent").length;
-  const oldestDays = open.reduce((m, g) => Math.max(m, g.primary.waitingDays || 0), 0);
 
   const teamLoad = staff.map((s) => ({ ...s, n: open.filter((g) => g.primary.assignedTo === s.key).length }));
   const areaCounts = {};
@@ -194,28 +193,15 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
               color: i.channel === "phone" ? "var(--db-primary)" : "var(--db-info)",
             }}
           >
-            <Icon d={i.channel === "phone" ? I.clock : I.mail} size={18} />
+            <Icon d={i.channel === "phone" ? I.clock : I.mail} size={20} />
           </div>
-          <div style={{ flex: 1, minWidth: 0, padding: "15px 18px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" }}>
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 700,
-                  letterSpacing: ".05em",
-                  textTransform: "uppercase",
-                  color: i.channel === "phone" ? "var(--db-primary)" : "var(--db-info)",
-                }}
-              >
-                {i.channel === "phone" ? "Telefon" : "E-Mail"}
+          <div style={{ flex: 1, minWidth: 0, padding: "14px 18px" }}>
+            {/* Name zuerst (Kanal zeigt das Icon in der Leiste links) */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: 16, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {i.school}
               </span>
-              <span className="db-faint" style={{ fontSize: 11 }}>· {i.received}</span>
-              {!done && i.waitingDays >= 2 && (
-                <Pill tone={i.waitingDays >= 4 ? "error" : "warn"} dot={false}>
-                  <Icon d={I.clock} size={10} /> seit {i.waitingDays} Tagen offen
-                </Pill>
-              )}
-              <span style={{ marginLeft: "auto" }}>
+              <span style={{ marginLeft: "auto", flexShrink: 0 }}>
                 {done ? (
                   <Pill tone="success">Buchung angelegt</Pill>
                 ) : multi ? (
@@ -227,12 +213,19 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
                 )}
               </span>
             </div>
-            <div style={{ fontWeight: 700, fontSize: 14.5 }}>{i.school}</div>
             <div
               className="db-muted"
-              style={{ fontSize: 12.5, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+              style={{ fontSize: 13.5, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
             >
               {i.from} — {i.summary}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+              <span className="db-faint" style={{ fontSize: 11.5 }}>{i.received}</span>
+              {!done && i.waitingDays >= 2 && (
+                <Pill tone={i.waitingDays >= 4 ? "error" : "warn"} dot={false}>
+                  <Icon d={I.clock} size={10} /> seit {i.waitingDays} Tagen offen
+                </Pill>
+              )}
             </div>
           </div>
           <div
@@ -255,7 +248,7 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
             <AssignControl id={i.id} who={i.assignedTo} suggest={suggest} onAssign={onAssign} staff={staff} me={me} />
           </div>
           <div style={{ display: "flex", alignItems: "center", padding: "0 12px", color: "var(--db-text-faint)" }}>
-            <Icon d={I.chevron} size={16} />
+            <Icon d={I.chevron} size={18} />
           </div>
         </div>
       </div>
@@ -286,9 +279,7 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
         </div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginTop: 2 }}>
           <h1 className="db-h1" style={{ fontSize: 22 }}>Team-Posteingang</h1>
-          <span className="db-faint" style={{ fontSize: 12 }}>
-            Am längsten offen: <b>{oldestDays ? `${oldestDays} Tage` : "—"}</b> · Ziel: Antwort in 2 Werktagen
-          </span>
+          <span className="db-faint" style={{ fontSize: 12 }}>Ziel: Antwort in 2 Werktagen</span>
         </div>
         <p className="db-muted" style={{ fontSize: 13, margin: "4px 0 0", maxWidth: "70ch" }}>
           E-Mail und Telefon laufen hier zusammen; dringende und nicht zugewiesene Anfragen stehen oben.
@@ -366,7 +357,7 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
 
           {/* Triage-Seitenleiste */}
           <aside className="inbox-aside">
-            <div className="aside-card">
+            <div className="aside-card primary">
               <div className="aside-title"><Icon d={I.users} size={13} /> Zuteilen · Team-Last</div>
               {(() => {
                 const maxLoad = Math.max(1, nUnassigned, ...teamLoad.map((t) => t.n));
@@ -400,18 +391,19 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
 
             <div className="aside-card">
               <div className="aside-title"><Icon d={I.house} size={13} /> Nach Bereich</div>
-              {Object.entries(areaCounts).length === 0 && <div className="db-muted" style={{ fontSize: 11.5, padding: "4px 2px" }}>—</div>}
-              {Object.entries(areaCounts).map(([label, n]) => (
-                <button
-                  key={label}
-                  className={`aside-row ${filter === `area:${label}` ? "active" : ""}`}
-                  onClick={() => setFilter(`area:${label}`)}
-                >
-                  <span className="route-area-dot" style={{ background: areaColor(label) }} />
-                  <span className="aside-name">{label}</span>
-                  <span className="mono aside-n">{n}</span>
-                </button>
-              ))}
+              <div className="aside-chips">
+                {Object.entries(areaCounts).length === 0 && <span className="db-faint" style={{ fontSize: 11.5 }}>—</span>}
+                {Object.entries(areaCounts).map(([label, n]) => (
+                  <button
+                    key={label}
+                    className={`aside-chip ${filter === `area:${label}` ? "active" : ""}`}
+                    onClick={() => setFilter(`area:${label}`)}
+                  >
+                    <span className="route-area-dot" style={{ background: areaColor(label) }} />
+                    {label} <span className="aside-chip-n">{n}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="aside-card">

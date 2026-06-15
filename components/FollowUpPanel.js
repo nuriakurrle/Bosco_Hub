@@ -11,17 +11,17 @@ import { buildInquiryFollowUp } from "@/lib/followup";
 const labelStyle = {
   display: "flex",
   flexDirection: "column",
-  gap: 3,
-  fontSize: 11,
+  gap: 4,
+  fontSize: 12,
   fontWeight: 600,
   color: "var(--db-text-muted)",
 };
 const inputStyle = {
   fontFamily: "inherit",
-  fontSize: 12.5,
+  fontSize: 14,
   border: "1px solid var(--db-line-strong)",
   borderRadius: 6,
-  padding: "6px 8px",
+  padding: "8px 10px",
   color: "var(--db-text)",
   background: "#fff",
 };
@@ -97,7 +97,7 @@ export default function FollowUpPanel({ item, missing = [], onSend }) {
           <label style={labelStyle}>
             Nachricht
             <textarea
-              style={{ ...inputStyle, minHeight: 170, fontFamily: "var(--db-font-serif)", lineHeight: 1.5 }}
+              style={{ ...inputStyle, minHeight: 250, fontSize: 14.5, fontFamily: "var(--db-font-serif)", lineHeight: 1.6 }}
               value={body}
               onChange={(e) => setBody(e.target.value)}
             />

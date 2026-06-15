@@ -54,6 +54,8 @@ export default function BookingsView({ bookings, tasksDone = {}, me, houses = []
   const [house, setHouse] = useState("all");
   const [done, setDone] = useState(tasksDone);
   const [expanded, setExpanded] = useState(null);
+  // Buchung, deren Aktions-Menü („⋯") gerade offen ist (oder null).
+  const [menuId, setMenuId] = useState(null);
   // Aktiver KPI-Filter (klickbare Karte): all | reserved | confirmed | draft.
   const [kpiFilter, setKpiFilter] = useState("all");
 
@@ -147,25 +149,25 @@ export default function BookingsView({ bookings, tasksDone = {}, me, houses = []
                 const ct = CONTRACT[b.contractStatus] || CONTRACT.draft;
                 const tl = computeTimeline(b.startISO, done[b.id]);
                 const card = (
-                  <div className="db-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+                  <div className="db-card" style={{ padding: "13px 14px", display: "flex", alignItems: "center", gap: 14 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <span style={{ fontWeight: 700, fontSize: 14 }}>{b.title}</span>
+                        <span style={{ fontWeight: 700, fontSize: 16 }}>{b.title}</span>
                         <Pill tone={st.tone} dot={false}>{st.label}</Pill>
                         <Pill tone={ct.tone} dot={false}>{ct.label}</Pill>
                       </div>
-                      <div className="db-muted" style={{ fontSize: 12.5, marginTop: 2 }}>
+                      <div className="db-muted" style={{ fontSize: 13.5, marginTop: 3 }}>
                         {b.school && b.school !== b.title ? `${b.school} · ` : ""}
                         {b.program || "Aufenthalt"}{b.contact ? ` · ${b.contact}` : ""}
                       </div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div className="mono" style={{ fontSize: 12.5, fontWeight: 600 }}>{b.dates}</div>
-                      <div className="db-faint" style={{ fontSize: 11.5 }}>
-                        <Icon d={I.users} size={11} style={{ verticalAlign: -1 }} /> {b.people}{b.people !== "—" ? " Pers." : ""}
+                      <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>{b.dates}</div>
+                      <div className="db-faint" style={{ fontSize: 12 }}>
+                        <Icon d={I.users} size={12} style={{ verticalAlign: -1 }} /> {b.people}{b.people !== "—" ? " Pers." : ""}
                       </div>
                     </div>
-                    <span className="booking-actions" style={{ flexShrink: 0 }} onClick={(e) => e.preventDefault()}>
+                    <span className="booking-actions" style={{ flexShrink: 0, position: "relative" }} onClick={(e) => e.preventDefault()}>
                       <button
                         className={`db-btn db-btn-sm ${expanded === b.id ? "db-btn-primary" : "db-btn-ghost"}`}
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpanded(expanded === b.id ? null : b.id); }}
@@ -175,14 +177,30 @@ export default function BookingsView({ bookings, tasksDone = {}, me, houses = []
                         {tl.overdue > 0 ? <span className="tl-badge">{tl.overdue}</span> : tl.open > 0 ? ` ${tl.open}` : " ✓"}
                       </button>
                       <button
-                        className="db-btn db-btn-ghost db-btn-sm"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditing({ ...b }); }}
-                        title="Buchung bearbeiten"
+                        className={`db-btn db-btn-sm ${menuId === b.id ? "db-btn-primary" : "db-btn-ghost"}`}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === b.id ? null : b.id); }}
+                        title="Weitere Aktionen"
                       >
-                        <Icon d={I.pencil} size={12} /> bearbeiten
+                        <Icon d={I.more} size={14} />
                       </button>
-                      <MealButton booking={b} />
-                      <ContractButton booking={b} onSaveText={(text) => saveText(b.id, text)} />
+                      {menuId === b.id && (
+                        <>
+                          <div
+                            className="booking-menu-overlay"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuId(null); }}
+                          />
+                          <div className="booking-menu" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                            <button
+                              className="db-btn db-btn-ghost db-btn-sm"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuId(null); setEditing({ ...b }); }}
+                            >
+                              <Icon d={I.pencil} size={12} /> Bearbeiten
+                            </button>
+                            <MealButton booking={b} />
+                            <ContractButton booking={b} onSaveText={(text) => saveText(b.id, text)} />
+                          </div>
+                        </>
+                      )}
                     </span>
                     {b.inquiryId && <Icon d={I.chevron} size={16} style={{ color: "var(--db-text-faint)", flexShrink: 0 }} />}
                   </div>

@@ -323,7 +323,7 @@ body {
 /* Email body */
 .db-email {
   font-family: var(--db-font-serif);
-  font-size: 13px; line-height: 1.55;
+  font-size: 14.5px; line-height: 1.6;
   color: #3a3530;
 }
 .db-email p { margin: 0 0 8px; }
@@ -453,6 +453,10 @@ body {
 }
 .tr-mark:hover { background: #ffe98e; }
 .tr-mark.lowconf { background: #f6dfdd; border-bottom-color: #c77; }
+
+/* Abschnitts-Überschriften in der Detail-Spalte (Daten prüfen · Belegung · E-Mails · Freigabe) */
+.det-section-head { display: flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--db-text-muted); margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--db-line); }
+.det-section-head.primary { color: var(--db-primary); border-bottom-color: color-mix(in srgb, var(--db-primary) 35%, var(--db-line)); }
 
 /* Extraction field rows */
 /* Detailseite — Luft-/Abstands-Pass (gescoped, lässt andere Seiten unberührt) */
@@ -913,6 +917,10 @@ body {
    Ajustes para Next.js (altura completa + enlaces)
    ─────────────────────────────────────────────── */
 html, body { height: 100%; margin: 0; }
+/* Globale Vergrößerung: die UI ist px-basiert und insgesamt recht klein.
+   zoom auf der Wurzel wirkt wie Browser-Zoom (skaliert alles gleichmäßig,
+   vh/Layout bleiben korrekt). Wert hier zentral anpassbar. */
+html { zoom: 1.1; }
 body { background: var(--db-bg); }
 .db-app { min-height: 100vh; }
 a { color: inherit; text-decoration: none; }
@@ -1084,7 +1092,7 @@ a { color: inherit; text-decoration: none; }
 /* Markierungen im E-Mail-Text */
 .db-email-hl {
   white-space: pre-wrap; word-break: break-word;
-  font-size: 12.5px; line-height: 1.6; color: var(--db-text);
+  font-size: 14px; line-height: 1.65; color: var(--db-text);
   font-family: var(--db-font-sans);
 }
 .hl {
@@ -1182,7 +1190,7 @@ a { color: inherit; text-decoration: none; }
    E-Mail-Quelle: TL;DR · Routing · Schwärzung · Feld↔Text · History · Composer
    ─────────────────────────────────────────────── */
 .email-src { display: flex; flex-direction: column; }
-.src-from { font-size: 11px; color: var(--db-text-faint); margin-bottom: 8px; }
+.src-from { font-size: 12.5px; color: var(--db-text-faint); margin-bottom: 8px; }
 .src-routing {
   display: inline-flex; align-items: center; gap: 7px; align-self: flex-start;
   font-size: 11.5px; color: var(--db-text-muted);
@@ -1201,7 +1209,7 @@ a { color: inherit; text-decoration: none; }
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
   color: var(--db-info); padding-top: 1px;
 }
-.src-subject { font-weight: 600; font-size: 13px; margin: 0 0 8px; }
+.src-subject { font-weight: 600; font-size: 15px; margin: 0 0 8px; }
 
 .src-body { position: relative; }
 
@@ -1273,7 +1281,16 @@ a { color: inherit; text-decoration: none; }
 
 .inbox-aside { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 0; }
 .aside-card { border: 1px solid var(--db-line); border-radius: var(--db-radius); background: var(--db-paper); padding: 13px 15px; box-shadow: var(--db-shadow-soft); }
+/* Team-Last als primäres Triage-Werkzeug betonen. */
+.aside-card.primary { border-left: 3px solid var(--db-primary); }
+.aside-card.primary .aside-title { color: var(--db-primary); }
 .aside-title { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--db-text-muted); margin-bottom: 8px; }
+/* Kompakte Bereich-Chips (sekundärer Filter). */
+.aside-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.aside-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; padding: 3px 8px; border: 1px solid var(--db-line); border-radius: 999px; background: var(--db-paper); color: var(--db-text); cursor: pointer; }
+.aside-chip:hover { background: var(--db-paper-2); }
+.aside-chip.active { background: var(--db-primary-tint); border-color: var(--db-primary); }
+.aside-chip-n { font-family: var(--db-font-mono); font-size: 10.5px; color: var(--db-text-muted); }
 .aside-row {
   width: 100%; text-align: left; display: flex; align-items: center; gap: 8px;
   padding: 5px 6px; border-radius: 6px; border: none; background: transparent; cursor: pointer;
@@ -1473,6 +1490,15 @@ a { color: inherit; text-decoration: none; }
    ─────────────────────────────────────────────── */
 .booking-block { display: flex; flex-direction: column; }
 .booking-actions { display: flex; align-items: center; gap: 6px; }
+/* Aktions-Überlauf-Menü („⋯") je Buchung */
+.booking-menu-overlay { position: fixed; inset: 0; z-index: 30; }
+.booking-menu {
+  position: absolute; top: calc(100% + 5px); right: 0; z-index: 31;
+  display: flex; flex-direction: column; gap: 4px; min-width: 168px;
+  background: var(--db-paper); border: 1px solid var(--db-line); border-radius: var(--db-radius);
+  box-shadow: 0 10px 28px -8px rgba(40, 20, 25, 0.28); padding: 6px;
+}
+.booking-menu .db-btn { width: 100%; justify-content: flex-start; }
 .tl-badge { display: inline-block; min-width: 15px; padding: 0 4px; margin-left: 3px; border-radius: 8px; background: var(--db-error); color: #fff; font-size: 10px; font-weight: 700; text-align: center; }
 
 .timeline-panel {
@@ -1574,12 +1600,6 @@ a { color: inherit; text-decoration: none; }
 .cal-cell:first-child { border-left: none; }
 .cal-cell.we { background: color-mix(in srgb, var(--db-text) 3%, transparent); }
 .cal-cell.today { background: var(--db-primary-tint); }
-/* Auslastungs-Heatmap: Tageszelle nach Belegung einfärben (ok = ohne Tönung,
-   eng = gelb, voll = rot, überbucht = kräftiges Rot). Liegt nach .we/.today,
-   damit eine belegte Zelle die Tönung gewinnt — „heute" bleibt am fetten Datum erkennbar. */
-.cal-cell.load-tight { background: color-mix(in srgb, var(--db-warn) 18%, transparent); }
-.cal-cell.load-full  { background: color-mix(in srgb, var(--db-error) 15%, transparent); }
-.cal-cell.load-over  { background: color-mix(in srgb, var(--db-error) 28%, transparent); }
 
 .cal-daynum { display: flex; align-items: center; justify-content: space-between; padding: 4px 7px 0; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--db-text); position: relative; z-index: 1; }
 .cal-daynum.dim { color: var(--db-text-faint); }

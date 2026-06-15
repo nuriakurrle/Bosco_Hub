@@ -211,43 +211,8 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
           </div>
 
           <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "14px 18px 18px" }}>
-            {history && (
-              <div style={{ marginBottom: 10 }}>
-                <SchoolHistory history={history} />
-              </div>
-            )}
-            {duplicate && (
-              <div style={{ marginBottom: 10 }}>
-                <DuplicateBanner
-                  dup={duplicate}
-                  onReview={(d) => router.push(`/buchungen#booking-${d.booking.id}`)}
-                />
-              </div>
-            )}
-            {related.length > 0 && (
-              <div className="related-banner">
-                <div className="rel-head">
-                  <Icon d={I.link} size={14} />
-                  <b style={{ fontSize: 12.5 }}>Verwandte Anfragen derselben Schule</b>
-                </div>
-                {related.map((r) => (
-                  <div key={r.id} className="rel-row">
-                    <span className={`db-pill ${r.channel === "phone" ? "db-pill-burgundy" : "db-pill-info"}`}>
-                      <Icon d={r.channel === "phone" ? I.clock : I.mail} size={10} />
-                      {r.channel === "phone" ? "Telefon" : "E-Mail"}
-                    </span>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {r.summary} <span className="db-faint">· {r.received}</span>
-                      {r.crossChannel && <span className="note-tag other">anderer Kanal</span>}
-                    </span>
-                    <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push(`/inquiry/${r.id}`)}>öffnen</button>
-                    <button className="db-btn db-btn-sage db-btn-sm" onClick={() => mergeWith(r.id)}>
-                      <Icon d={I.link} size={11} /> zusammenführen
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Abschnitt 1: Daten prüfen */}
+            <div className="det-section-head"><Icon d={I.doc} size={12} /> Daten prüfen</div>
             {fields.map((f) => (
               <div
                 key={f.id}
@@ -314,9 +279,49 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
               </div>
             )}
 
-            {/* Belegungs-/Saison-Check + Zimmer-/Datenschutz-Gate (v2) */}
+            {/* Kontext zur Anfrage — bewusst unter den Daten, damit die Felder zuerst kommen */}
+            {history && (
+              <div style={{ marginTop: 14 }}>
+                <SchoolHistory history={history} />
+              </div>
+            )}
+            {duplicate && (
+              <div style={{ marginTop: 10 }}>
+                <DuplicateBanner
+                  dup={duplicate}
+                  onReview={(d) => router.push(`/buchungen#booking-${d.booking.id}`)}
+                />
+              </div>
+            )}
+            {related.length > 0 && (
+              <div className="related-banner" style={{ marginTop: 10 }}>
+                <div className="rel-head">
+                  <Icon d={I.link} size={14} />
+                  <b style={{ fontSize: 12.5 }}>Verwandte Anfragen derselben Schule</b>
+                </div>
+                {related.map((r) => (
+                  <div key={r.id} className="rel-row">
+                    <span className={`db-pill ${r.channel === "phone" ? "db-pill-burgundy" : "db-pill-info"}`}>
+                      <Icon d={r.channel === "phone" ? I.clock : I.mail} size={10} />
+                      {r.channel === "phone" ? "Telefon" : "E-Mail"}
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {r.summary} <span className="db-faint">· {r.received}</span>
+                      {r.crossChannel && <span className="note-tag other">anderer Kanal</span>}
+                    </span>
+                    <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push(`/inquiry/${r.id}`)}>öffnen</button>
+                    <button className="db-btn db-btn-sage db-btn-sm" onClick={() => mergeWith(r.id)}>
+                      <Icon d={I.link} size={11} /> zusammenführen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Abschnitt 2: Belegung & Eignung */}
+            {assessment && <div className="det-section-head" style={{ marginTop: 18 }}><Icon d={I.house} size={12} /> Belegung &amp; Eignung</div>}
             {assessment && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 10 }}>
                 <AvailabilityCard
                   assessment={assessment}
                   onSelectAlternative={(alt) =>
@@ -332,10 +337,13 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
               </div>
             )}
 
-            {/* E-Mail-Entwürfe an den Kunden (human-in-the-loop):
-                Rückfrage bei fehlenden Infos + Kundenbestätigung. */}
+            {/* Abschnitt 3: E-Mails an den Kunden (human-in-the-loop) */}
+            <div className="det-section-head" style={{ marginTop: 18 }}><Icon d={I.mail} size={12} /> E-Mails an den Kunden</div>
+            <div className="db-faint" style={{ fontSize: 11.5, margin: "-2px 0 8px" }}>
+              Rückfrage = wenn noch Infos fehlen · Bestätigung = wenn alles vollständig ist.
+            </div>
             {!locked && (
-              <div style={{ marginTop: 16 }}>
+              <div>
                 <FollowUpPanel
                   item={item}
                   missing={missing}
@@ -343,12 +351,13 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                 />
               </div>
             )}
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: 12 }}>
               <ConfirmationPanel item={item} />
             </div>
 
-            {/* Pflicht-Verifizierung vor dem Anlegen */}
-            <div style={{ marginTop: 16 }}>
+            {/* Abschnitt 4: Freigabe (primärer Schritt vor dem Anlegen) */}
+            <div className="det-section-head primary" style={{ marginTop: 18 }}><Icon d={I.check} size={12} /> Freigabe</div>
+            <div>
               <VerifyGate
                 checked={verifyChecked}
                 onToggle={onVerifyToggle}
