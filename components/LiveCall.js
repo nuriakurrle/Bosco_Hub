@@ -24,12 +24,18 @@ const FIELDS = [
 
 const SPK_LABEL = { staff: "Mitarbeiter", caller: "Anrufer" };
 
+// Microservicio de transcripción en vivo (Fase 3b-i). En producción: wss://… vía Caddy.
+const LIVE_WS = "ws://localhost:8787";
+
 export default function LiveCall() {
   const router = useRouter();
   const esRef = useRef(null);
+  const wsRef = useRef(null);
+  const audioRef = useRef(null); // { ac, stream, node }
   const scrollRef = useRef(null);
   const [status, setStatus] = useState("idle"); // idle | listening | ended
   const [segments, setSegments] = useState([]);
+  const [partialText, setPartialText] = useState("");
   const [fields, setFields] = useState({});
   const [sensitiveNote, setSensitiveNote] = useState(null);
   const [suggestion, setSuggestion] = useState(null);
@@ -38,42 +44,115 @@ export default function LiveCall() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // Cierra el stream al desmontar.
-  useEffect(() => () => esRef.current?.close(), []);
+  // Cierra todo al desmontar.
+  useEffect(() => () => closeAll(), []);
 
   // Auto-scroll del transcript al último segmento.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [segments]);
 
-  function startStream(url) {
-    // Reinicia el estado y abre el SSE (mock con guion, o transcripción real).
-    esRef.current?.close();
-    setSegments([]); setFields({}); setSensitiveNote(null);
+  // Limpia transcript/campos antes de empezar una nueva fuente.
+  function resetState() {
+    setSegments([]); setPartialText(""); setFields({}); setSensitiveNote(null);
     setSuggestion(null); setShowSensitive(false);
+  }
+
+  // Cierra todas las conexiones/recursos abiertos (SSE, WebSocket, micrófono).
+  function closeAll() {
+    esRef.current?.close(); esRef.current = null;
+    wsRef.current?.close(); wsRef.current = null;
+    if (audioRef.current) {
+      const { ac, stream } = audioRef.current;
+      stream?.getTracks().forEach((t) => t.stop());
+      ac?.close();
+      audioRef.current = null;
+    }
+  }
+
+  // Aplica un evento al estado (mismo formato en SSE y en WebSocket).
+  function handleEvent(msg) {
+    if (msg.type === "status") setStatus(msg.value);
+    else if (msg.type === "partial") setPartialText(msg.text);
+    else if (msg.type === "segment") { setSegments((s) => [...s, msg.seg]); setPartialText(""); }
+    else if (msg.type === "fields")
+      setFields((prev) => {
+        // Merge acumulativo: no borrar un campo ya detectado; actualizar solo si
+        // estaba vacío o el nuevo valor tiene confianza igual o mayor.
+        const next = { ...prev };
+        for (const [k, v] of Object.entries(msg.fields)) {
+          const old = next[k];
+          if (!old?.value || (v.conf ?? 0) >= (old.conf ?? 0)) next[k] = v;
+        }
+        return next;
+      });
+    else if (msg.type === "sensitive") setSensitiveNote(msg.note);
+    else if (msg.type === "suggestion") setSuggestion(msg.text);
+    else if (msg.type === "error") { setToast(msg.message); setStatus("ended"); }
+  }
+
+  // Demo / archivo: fuente por SSE.
+  function startStream(url) {
+    closeAll(); resetState();
     const es = new EventSource(url);
     esRef.current = es;
     es.onmessage = (e) => {
       const msg = JSON.parse(e.data);
-      if (msg.type === "status") setStatus(msg.value);
-      else if (msg.type === "segment") setSegments((s) => [...s, msg.seg]);
-      else if (msg.type === "fields") setFields((f) => ({ ...f, ...msg.fields }));
-      else if (msg.type === "sensitive") setSensitiveNote(msg.note);
-      else if (msg.type === "suggestion") setSuggestion(msg.text);
-      else if (msg.type === "error") { setToast(msg.message); es.close(); setStatus("ended"); }
-      else if (msg.type === "done") es.close();
+      handleEvent(msg);
+      if (msg.type === "done") es.close();
     };
     es.onerror = () => { es.close(); setStatus("ended"); };
   }
-
-  // Demo con guion fijo (sin coste).
   const answer = (scenario = "complete") =>
     startStream(`/api/live-call/stream?scenario=${scenario}`);
-  // IA real: transcribe un archivo de live-call/samples/ (Whisper + gpt-4o-mini).
   const answerReal = () => startStream("/api/live-call/transcribe");
 
+  // En vivo: micrófono del navegador → microservicio live-call (WebSocket).
+  async function answerLive() {
+    closeAll(); resetState();
+    setStatus("listening");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const ac = new AudioContext({ sampleRate: 24000 });
+      await ac.audioWorklet.addModule("/pcm-worklet.js");
+      const src = ac.createMediaStreamSource(stream);
+      const node = new AudioWorkletNode(ac, "pcm-worklet");
+      audioRef.current = { ac, stream, node };
+
+      const ws = new WebSocket(LIVE_WS);
+      ws.binaryType = "arraybuffer";
+      wsRef.current = ws;
+      ws.onmessage = (e) => handleEvent(JSON.parse(e.data));
+      ws.onerror = () => {
+        setToast("Keine Verbindung zum live-call Dienst (läuft `npm start` in live-call/?).");
+        setStatus("ended");
+      };
+      ws.onclose = () => setStatus((s) => (s === "listening" ? "ended" : s));
+
+      // Reenvía el PCM del worklet al microservicio.
+      node.port.onmessage = (e) => { if (ws.readyState === WebSocket.OPEN) ws.send(e.data); };
+      src.connect(node);
+      node.connect(ac.destination); // mantiene el grafo activo (el worklet no emite audio)
+    } catch (err) {
+      setToast("Mikrofon nicht verfügbar: " + (err?.message || err));
+      setStatus("ended");
+    }
+  }
+
   function hangup() {
-    esRef.current?.close();
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      // Detener el micro (silencio) y pedir cerrar la última frase + extracción.
+      if (audioRef.current) {
+        audioRef.current.stream?.getTracks().forEach((t) => t.stop());
+        audioRef.current.ac?.close();
+        audioRef.current = null;
+      }
+      ws.send(JSON.stringify({ type: "stop" }));
+      setTimeout(() => closeAll(), 2500); // dar tiempo a la transcripción/extracción final
+    } else {
+      closeAll();
+    }
     setStatus("ended");
   }
 
@@ -141,6 +220,9 @@ export default function LiveCall() {
               <Btn kind="secondary" size="sm" onClick={answerReal}>
                 Echte Aufnahme
               </Btn>
+              <Btn kind="secondary" size="sm" onClick={answerLive}>
+                Live (Mikrofon)
+              </Btn>
               <Btn kind="sage" icon="clock" onClick={() => answer("complete")}>
                 {status === "ended" ? "Neuer Anruf" : "Anruf annehmen"}
               </Btn>
@@ -156,7 +238,7 @@ export default function LiveCall() {
         {/* TRANSCRIPT */}
         <section ref={scrollRef} className="db-scroll" style={{ flex: "1 1 56%", minWidth: 0, padding: 22, borderRight: "1px solid var(--db-line)" }}>
           <div className="db-card-title" style={{ marginBottom: 10 }}>Transkript</div>
-          {segments.length === 0 ? (
+          {segments.length === 0 && !partialText ? (
             <div className="db-empty" style={{ padding: "40px 24px" }}>
               <Icon d={I.clock} size={22} />
               <div>Noch kein Anruf. Klicke auf <b>„Anruf annehmen"</b>, um die Live-Transkription zu sehen.</div>
@@ -195,6 +277,12 @@ export default function LiveCall() {
                   </div>
                 </div>
               ))}
+              {partialText && (
+                <div className="tr-seg">
+                  <div className="tr-meta"><div className="tr-time">…</div></div>
+                  <div className="tr-text" style={{ color: "var(--db-text-faint)" }}>{partialText}</div>
+                </div>
+              )}
             </div>
           )}
         </section>

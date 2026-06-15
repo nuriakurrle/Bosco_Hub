@@ -28,6 +28,25 @@ The phone side of Bosco Hub. See the architecture in
 Audio files in `samples/` are git-ignored (they can be large or contain real
 data). Only `.gitignore` is tracked.
 
+## Try Phase 3b-i (live, microphone)
+
+Real streaming transcription from your browser mic — no Twilio yet.
+
+1. Same `OPENAI_API_KEY` in `.env.local` as above (the service reads it from there).
+2. Start the microservice (separate terminal):
+   ```
+   cd live-call
+   npm install   # first time only
+   npm start     # → live-call listo en ws://localhost:8787
+   ```
+3. With the dashboard running, open **/llamada** and click **„Live (Mikrofon)"**.
+   Allow the mic, start talking (German or English) and watch it transcribe live;
+   the fields on the right fill in every few seconds.
+
+Uses OpenAI Realtime (`gpt-4o-transcribe-diarize`). The browser captures PCM 24 kHz
+via `public/pcm-worklet.js`. In production (Phase 3b-ii) the audio source becomes
+Twilio Media Streams instead of the mic; the microservice stays the same.
+
 ## Cost note
 
 Whisper ≈ $0.006 / audio-minute; the gpt-4o-mini extraction is a few cents.
