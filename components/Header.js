@@ -30,6 +30,13 @@ export default function Header({ staff = [], me, active = "inbox" }) {
       >
         <Icon d={I.bed} size={13} /> Buchungen
       </Link>
+      <Link
+        href="/llamada"
+        className="db-chip"
+        style={active === "live" ? activeChip : undefined}
+      >
+        <Icon d={I.clock} size={13} /> Telefon
+      </Link>
       <UserSwitcher staff={staff} me={me} />
     </header>
   );

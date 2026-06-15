@@ -85,6 +85,19 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - N8N_BASE_URL=http://n8n:5678
       - NODE_ENV=production
+      # Para la transcripción de llamadas (Whisper en el endpoint /api/live-call/transcribe).
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+  live-call:
+    # Microservicio de transcripción en vivo (Fase 3b). Sin "ports": se accede por
+    # wss a través de Caddy en https://live.boscohub.duckdns.org
+    build:
+      context: ./live-call
+    container_name: zuk-live-call
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TZ=Europe/Berlin
 
   caddy:
     # Proxy inverso con HTTPS automático (Let's Encrypt). Es la única pieza
@@ -95,6 +108,7 @@ services:
     depends_on:
       - dashboard
       - n8n
+      - live-call
     ports:
       - "80:80"
       - "443:443"

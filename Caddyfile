@@ -14,3 +14,9 @@ boscohub.duckdns.org {
 n8n.boscohub.duckdns.org {
 	reverse_proxy n8n:5678
 }
+
+# Microservicio de transcripción en vivo (WebSocket, Fase 3b).
+# Caddy gestiona el WebSocket y el HTTPS automáticamente.
+live.boscohub.duckdns.org {
+	reverse_proxy live-call:8787
+}
