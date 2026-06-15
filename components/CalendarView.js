@@ -220,6 +220,12 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
 
   const houseNames = houses.length ? houses.map((h) => h.name) : [...new Set(dated.map((b) => b.house))];
 
+  // Betten-Kapazität je Haus (für die Anzeige im Kopf).
+  const houseCaps = houseNames
+    .map((h) => ({ name: h, beds: (HOUSE_CAPACITY[houseKey(h)] || {}).beds }))
+    .filter((x) => x.beds);
+  const totalBeds = houseCaps.reduce((s, x) => s + x.beds, 0);
+
   function go(delta) {
     setCursor((c) => {
       const d = new Date(c.y, c.m + delta, 1);
@@ -229,16 +235,52 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
   function goToday() {
     setCursor({ y: today.getFullYear(), m: today.getMonth() });
   }
+  function goToMonth(d) {
+    setCursor({ y: d.getFullYear(), m: d.getMonth() });
+  }
+
+  // Bei leerem Monat: nächste Belegung nach dem Monat, sonst die letzte davor
+  // (respektiert den Hausfilter über `shown`).
+  const jumpTarget = useMemo(() => {
+    const mStart = new Date(cursor.y, cursor.m, 1);
+    const mEnd = new Date(cursor.y, cursor.m + 1, 0);
+    const after = shown.filter((b) => b._start > mEnd).sort((a, b) => a._start - b._start)[0];
+    if (after) return { date: after._start, dir: "next" };
+    const before = shown.filter((b) => b._end < mStart).sort((a, b) => b._start - a._start)[0];
+    if (before) return { date: before._start, dir: "prev" };
+    return null;
+  }, [shown, cursor]);
 
   return (
     <div className="dash-wrap db-scroll">
       <div className="dash-inner" style={{ maxWidth: 1320 }}>
         <div className="db-kicker" style={{ color: "var(--db-primary)" }}>Belegung · Zeitplan</div>
         <h1 className="db-h1" style={{ fontSize: 22, marginTop: 2 }}>Kalender</h1>
-        <p className="db-muted" style={{ fontSize: 13, margin: "4px 0 14px", maxWidth: "64ch" }}>
+        <p className="db-muted" style={{ fontSize: 13, margin: "4px 0 10px", maxWidth: "64ch" }}>
           Alle Buchungen mit festem Zeitraum auf einen Blick — wer wann in welchem Haus ist.
           Jeder Balken ist eine Gruppe; die Farbe steht für das Haus.
         </p>
+
+        {/* Betten-Kapazität der Häuser (Schätzwerte) */}
+        {houseCaps.length > 0 && (
+          <div className="db-faint" style={{ fontSize: 12, margin: "0 0 14px", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <Icon d={I.bed} size={12} style={{ verticalAlign: -2 }} />
+            <span>Kapazität:</span>
+            {house === "all" ? (
+              <>
+                {houseCaps.map((x) => (
+                  <span key={x.name}>
+                    <span className="route-area-dot" style={{ background: areaColor(x.name), width: 7, height: 7, marginRight: 4 }} />
+                    {x.name} {x.beds}
+                  </span>
+                ))}
+                <b>· gesamt {totalBeds} Betten</b>
+              </>
+            ) : (
+              <b>{bedCapacity} Betten ({house})</b>
+            )}
+          </div>
+        )}
 
         {/* Kopfzeile: Monatsnavigation + Hausfilter */}
         <div className="cal-head">
@@ -386,8 +428,14 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
         </div>
 
         {monthCount === 0 && (
-          <div className="db-muted" style={{ textAlign: "center", padding: "18px 0 0", fontSize: 13 }}>
-            Keine Buchungen mit festem Zeitraum in {MONTHS[cursor.m]} {cursor.y}.
+          <div style={{ textAlign: "center", padding: "18px 0 0", fontSize: 13, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <span className="db-muted">Keine Buchungen mit festem Zeitraum in {MONTHS[cursor.m]} {cursor.y}.</span>
+            {jumpTarget && (
+              <button className="db-btn db-btn-secondary db-btn-sm" onClick={() => goToMonth(jumpTarget.date)}>
+                <Icon d={I.calendar} size={12} />
+                {jumpTarget.dir === "next" ? "Nächste" : "Letzte"} Belegung: {MONTHS[jumpTarget.date.getMonth()]} {jumpTarget.date.getFullYear()}
+              </button>
+            )}
           </div>
         )}
 

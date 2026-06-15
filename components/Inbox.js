@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
-import { Pill } from "@/components/ui";
+import { Pill, StatCard } from "@/components/ui";
 import AssignControl from "@/components/AssignControl";
 import { areaColor, areaLabel, suggestedPerson } from "@/lib/team";
 
@@ -120,7 +120,8 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
 
   // ── Filter ──────────────────────────────────────────────────────────────
   let rows = groups.filter(matchesQuery);
-  if (filter === "email") rows = rows.filter((g) => g.primary.channel === "email");
+  if (filter === "open") rows = rows.filter((g) => !isDone(g));
+  else if (filter === "email") rows = rows.filter((g) => g.primary.channel === "email");
   else if (filter === "phone") rows = rows.filter((g) => g.primary.channel === "phone");
   else if (filter === "unassigned") rows = rows.filter((g) => !g.primary.assignedTo);
   else if (filter === "mine") rows = rows.filter((g) => g.primary.assignedTo === me);
@@ -161,13 +162,12 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
     .sort((a, b) => (b.primary.waitingDays || 0) - (a.primary.waitingDays || 0))
     .slice(0, 4);
 
-  const chips = [
-    ["all", "Alle", groups.length],
-    ["urgent", "Dringend", nUrgent],
-    ["unassigned", "Nicht zugewiesen", nUnassigned],
-    ["mine", "Mir zugewiesen", nMine],
-    ["email", "E-Mail", nEmail],
-    ["phone", "Telefon", nPhone],
+  // KPI-Karten = primäre Status-Filter (klicken filtert, erneut klicken = alle).
+  const KPI_CARDS = [
+    { k: "open", tone: "info", icon: "inbox", label: "Offen", val: open.length },
+    { k: "urgent", tone: "error", icon: "alert", label: "Dringend", val: nUrgent },
+    { k: "unassigned", tone: "warn", icon: "flag", label: "Nicht zugewiesen", val: nUnassigned },
+    { k: "mine", tone: "primary", icon: "users", label: "Mir zugewiesen", val: nMine },
   ];
 
   // Eine Anfrage-Karte (wiederverwendet in flacher Liste und Gruppen).
@@ -262,8 +262,8 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
     );
   }
 
-  // Gruppierung nach Dringlichkeit (nur ohne aktiven Filter/Suche).
-  const grouped = filter === "all" && !q;
+  // Gruppierung nach Dringlichkeit (Überblick "alle"/"offen", ohne Suche).
+  const grouped = (filter === "all" || filter === "open") && !q;
   const SECTIONS = [
     ["Dringend", (g) => urgencyOf(g) === "urgent"],
     ["Diese Woche", (g) => urgencyOf(g) === "warn" || urgencyOf(g) === "normal"],
@@ -284,33 +284,28 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
         <div className="db-kicker" style={{ color: "var(--db-primary)" }}>
           Schritt 1 — Anfragen sammeln &amp; zuteilen
         </div>
-        <h1 className="db-h1" style={{ fontSize: 22, marginTop: 2 }}>
-          Team-Posteingang
-        </h1>
-        <p className="db-muted" style={{ fontSize: 13, margin: "4px 0 0", maxWidth: "62ch" }}>
-          E-Mail und Telefon landen hier zusammen. Der n8n-Agent liest jede Anfrage, schlägt
-          einen Bereich und eine zuständige Person vor — Sie bestätigen die Zuteilung und legen
-          die Buchung an. <b>Dringende und nicht zugewiesene Anfragen stehen oben</b>, damit nichts
-          liegen bleibt. <span className="db-faint">Ziel: Rückmeldung an den Kunden innerhalb von 2 Werktagen.</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginTop: 2 }}>
+          <h1 className="db-h1" style={{ fontSize: 22 }}>Team-Posteingang</h1>
+          <span className="db-faint" style={{ fontSize: 12 }}>
+            Am längsten offen: <b>{oldestDays ? `${oldestDays} Tage` : "—"}</b> · Ziel: Antwort in 2 Werktagen
+          </span>
+        </div>
+        <p className="db-muted" style={{ fontSize: 13, margin: "4px 0 0", maxWidth: "70ch" }}>
+          E-Mail und Telefon laufen hier zusammen; dringende und nicht zugewiesene Anfragen stehen oben.
         </p>
 
-        {/* KPI-Zeile */}
-        <div className="inbox-kpis">
-          {[
-            { k: "all", tone: "info", label: "Offen gesamt", val: open.length },
-            { k: "urgent", tone: "error", label: "Dringend", val: nUrgent },
-            { k: "unassigned", tone: "warn", label: "Nicht zugewiesen", val: nUnassigned },
-            { k: null, tone: "neutral", label: "Am längsten offen", val: oldestDays ? `${oldestDays} Tage` : "—" },
-          ].map((kpi, idx) => (
-            <button
-              key={idx}
-              className={`inbox-kpi ${kpi.tone} ${kpi.k && filter === kpi.k ? "active" : ""}`}
-              onClick={() => kpi.k && setFilter(kpi.k)}
-              style={{ cursor: kpi.k ? "pointer" : "default" }}
-            >
-              <span className="ik-val">{kpi.val}</span>
-              <span className="ik-label">{kpi.label}</span>
-            </button>
+        {/* KPI-Karten = Status-Filter (klicken filtert, erneut klicken = alle) */}
+        <div className="dash-stats" style={{ marginTop: 16 }}>
+          {KPI_CARDS.map((c) => (
+            <StatCard
+              key={c.k}
+              tone={c.tone}
+              icon={c.icon}
+              label={c.label}
+              value={c.val}
+              active={filter === c.k}
+              onClick={() => setFilter(filter === c.k ? "all" : c.k)}
+            />
           ))}
         </div>
 
@@ -324,32 +319,20 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
           </div>
         )}
 
-        {nUnassigned > 0 && (
-          <div className="await-banner" style={{ marginTop: 14 }}>
-            <span className="pulse" />
-            <span>
-              <b>
-                {nUnassigned} Anfrage{nUnassigned > 1 ? "n sind" : " ist"} noch niemandem
-                zugewiesen.
-              </b>{" "}
-              Bitte zuteilen, damit nichts liegen bleibt.
-            </span>
-          </div>
-        )}
-
-        <div className="filter-chips" style={{ marginTop: 14 }}>
-          {chips.map(([k, l, n]) => (
-            <button
-              key={k}
-              className={`filter-chip ${filter === k ? "active" : ""}`}
-              onClick={() => setFilter(k)}
-            >
-              {k === "email" && <Icon d={I.mail} size={12} />}
-              {k === "phone" && <Icon d={I.clock} size={12} />}
-              {k === "urgent" && <Icon d={I.alert} size={12} />}
-              {l} <span className="fc-count">{n}</span>
+        {/* Sekundär: Kanal-Filter + Reset (andere Dimension als die Status-Karten) */}
+        <div className="filter-chips" style={{ marginTop: 12, alignItems: "center" }}>
+          <span className="db-faint" style={{ fontSize: 12, marginRight: 2 }}>Kanal:</span>
+          <button className={`filter-chip ${filter === "email" ? "active" : ""}`} onClick={() => setFilter(filter === "email" ? "all" : "email")}>
+            <Icon d={I.mail} size={12} /> E-Mail <span className="fc-count">{nEmail}</span>
+          </button>
+          <button className={`filter-chip ${filter === "phone" ? "active" : ""}`} onClick={() => setFilter(filter === "phone" ? "all" : "phone")}>
+            <Icon d={I.clock} size={12} /> Telefon <span className="fc-count">{nPhone}</span>
+          </button>
+          {filter !== "all" && (
+            <button className="db-link" style={{ marginLeft: "auto", fontSize: 12 }} onClick={() => setFilter("all")}>
+              Alle anzeigen
             </button>
-          ))}
+          )}
         </div>
       </div>
 
