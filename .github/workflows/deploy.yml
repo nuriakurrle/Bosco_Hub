@@ -46,6 +46,7 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           N8N_BASIC_AUTH_PASSWORD: ${{ secrets.N8N_BASIC_AUTH_PASSWORD }}
           N8N_ENCRYPTION_KEY: ${{ secrets.N8N_ENCRYPTION_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           cat > .env <<EOF
           POSTGRES_USER=zuk
@@ -54,6 +55,7 @@ jobs:
           N8N_BASIC_AUTH_USER=zuk
           N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
           N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+          OPENAI_API_KEY=${OPENAI_API_KEY}
           SERVER_HOST=${SSH_HOST}
           EOF
 

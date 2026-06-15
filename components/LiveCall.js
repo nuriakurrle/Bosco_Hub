@@ -24,8 +24,34 @@ const FIELDS = [
 
 const SPK_LABEL = { staff: "Mitarbeiter", caller: "Anrufer" };
 
-// Microservicio de transcripción en vivo (Fase 3b-i). En producción: wss://… vía Caddy.
-const LIVE_WS = "ws://localhost:8787";
+// URL del microservicio de transcripción en vivo (Fase 3b).
+// En local: ws://localhost:8787. En producción: wss://live.<dominio> (vía Caddy).
+function liveWsUrl() {
+  if (typeof window === "undefined") return "ws://localhost:8787";
+  const h = window.location.hostname;
+  if (h === "localhost" || h === "127.0.0.1") return "ws://localhost:8787";
+  return `wss://live.${window.location.host}`;
+}
+
+// Parte un texto en tokens, resaltando las citas (quotes) de las entidades.
+function tokenize(text, marks) {
+  let tokens = [{ text }];
+  for (const m of marks) {
+    if (!m.quote) continue;
+    const next = [];
+    for (const tk of tokens) {
+      const idx = tk.mark ? -1 : tk.text.indexOf(m.quote);
+      if (idx < 0) { next.push(tk); continue; }
+      const before = tk.text.slice(0, idx);
+      const after = tk.text.slice(idx + m.quote.length);
+      if (before) next.push({ text: before });
+      next.push({ text: m.quote, mark: { type: m.type, low: m.low } });
+      if (after) next.push({ text: after });
+    }
+    tokens = next;
+  }
+  return tokens;
+}
 
 export default function LiveCall() {
   const router = useRouter();
@@ -119,7 +145,7 @@ export default function LiveCall() {
       const node = new AudioWorkletNode(ac, "pcm-worklet");
       audioRef.current = { ac, stream, node };
 
-      const ws = new WebSocket(LIVE_WS);
+      const ws = new WebSocket(liveWsUrl());
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
       ws.onmessage = (e) => handleEvent(JSON.parse(e.data));
@@ -199,6 +225,37 @@ export default function LiveCall() {
     .filter((k) => !fields[k]?.value)
     .map((k) => FIELDS.find((f) => f.key === k).label);
 
+  // Citas a resaltar en el transcript, derivadas de los campos detectados.
+  const marks = FIELDS
+    .filter((f) => f.mark && fields[f.key]?.quote)
+    .map((f) => ({ quote: fields[f.key].quote, type: f.mark, low: fields[f.key].low }));
+
+  // Tokens de un segmento: si ya vienen marcados (mock/archivo) se respetan;
+  // si es texto plano (live) se re-tokeniza con las citas actuales.
+  const segTokens = (seg) =>
+    seg.tokens.some((t) => t.mark)
+      ? seg.tokens
+      : tokenize(seg.tokens.map((t) => t.text).join(""), marks);
+
+  const renderTokens = (toks) =>
+    toks.map((tk, j) => {
+      if (!tk.mark) return <span key={j}>{tk.text}</span>;
+      const sensitive = tk.mark.type === "sensitive";
+      const blur = sensitive && !showSensitive;
+      const cls = ["tr-mark", `tr-mark--${tk.mark.type}`, tk.mark.low && "lowconf", hot === tk.mark.type && "hot", blur && "is-blur"]
+        .filter(Boolean).join(" ");
+      return (
+        <mark
+          key={j}
+          className={cls}
+          title={sensitive ? "Sensible Daten — zum Anzeigen klicken" : undefined}
+          onClick={() => sensitive && setShowSensitive(true)}
+        >
+          {tk.text}
+        </mark>
+      );
+    });
+
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
       {/* sub-header */}
@@ -251,36 +308,13 @@ export default function LiveCall() {
                     <div className="tr-time">{seg.t}</div>
                     {seg.spk && <div className={`tr-spk ${seg.spk}`}>{SPK_LABEL[seg.spk]}</div>}
                   </div>
-                  <div className="tr-text">
-                    {seg.tokens.map((tk, j) => {
-                      if (!tk.mark) return <span key={j}>{tk.text}</span>;
-                      const sensitive = tk.mark.type === "sensitive";
-                      const blur = sensitive && !showSensitive;
-                      const cls = [
-                        "tr-mark",
-                        `tr-mark--${tk.mark.type}`,
-                        tk.mark.low && "lowconf",
-                        hot === tk.mark.type && "hot",
-                        blur && "is-blur",
-                      ].filter(Boolean).join(" ");
-                      return (
-                        <mark
-                          key={j}
-                          className={cls}
-                          title={sensitive ? "Sensible Daten — zum Anzeigen klicken" : undefined}
-                          onClick={() => sensitive && setShowSensitive(true)}
-                        >
-                          {tk.text}
-                        </mark>
-                      );
-                    })}
-                  </div>
+                  <div className="tr-text">{renderTokens(segTokens(seg))}</div>
                 </div>
               ))}
               {partialText && (
                 <div className="tr-seg">
                   <div className="tr-meta"><div className="tr-time">…</div></div>
-                  <div className="tr-text" style={{ color: "var(--db-text-faint)" }}>{partialText}</div>
+                  <div className="tr-text" style={{ color: "var(--db-text-faint)" }}>{renderTokens(tokenize(partialText, marks))}</div>
                 </div>
               )}
             </div>

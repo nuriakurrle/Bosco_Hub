@@ -21,7 +21,7 @@ Regeln:
 - "value" auf Deutsch normalisieren (Datum TT.MM.JJJJ; wenn kein Jahr genannt, nächstes zukünftiges Jahr).
 - "haus": "Aktionszentrum" bei Orientierungstagen/Besinnungstagen, "Jugendherberge" bei Schullandheim (niedrigere conf, da abgeleitet).
 - "personen": Schüler und Begleitpersonen getrennt (z. B. "25 + 2 Lehrer"), NICHT addieren.
-- Gesundheitsdaten/Allergien → in "sonder" Anzahl UND Art (z. B. "1 Laktoseintoleranz"), "sensitive": true, "sensitive_note" mit Hinweis (Art. 9 DSGVO). NIEMALS Klarnamen.
+- Ernährung/Gesundheit/Allergien (auch vegetarisch, vegan, Laktose, Erdnuss …) → in "sonder" Anzahl UND konkrete Art (z. B. "1 Vegetarier", "1 Laktoseintoleranz"). "quote" = das konkrete Stichwort (z. B. "vegetarian"), NICHT ein allgemeiner Satz. "sensitive": true und "sensitive_note" mit Hinweis (Art. 9 DSGVO). NIEMALS Klarnamen.
 - Felder ohne Information: "value" leer lassen.`;
 
 export async function extractFields(transcript, key) {
@@ -29,7 +29,7 @@ export async function extractFields(transcript, key) {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [

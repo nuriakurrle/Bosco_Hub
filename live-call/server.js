@@ -151,7 +151,7 @@ function sendFields(send, ex) {
   const out = {};
   for (const k of FIELD_KEYS) {
     if (f[k]?.value) {
-      out[k] = { value: f[k].value, conf: f[k].conf, low: (f[k].conf || 0) < 0.75, sensitive: !!f[k].sensitive };
+      out[k] = { value: f[k].value, conf: f[k].conf, low: (f[k].conf || 0) < 0.75, sensitive: !!f[k].sensitive, quote: f[k].quote || "" };
     }
   }
   if (Object.keys(out).length) send({ type: "fields", fields: out });
