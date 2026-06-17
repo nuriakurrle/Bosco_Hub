@@ -3,51 +3,62 @@
 The phone side of Bosco Hub. See the architecture in
 [`../CALL-TRANSCRIPTION.md`](../CALL-TRANSCRIPTION.md).
 
-## Where things are now
+The microservice (`server.js`) has three WebSocket paths:
 
-- **Phase 1 (demo)** — a fixed script. Endpoint `app/api/live-call/stream`.
-- **Phase 3a (real AI on a file)** — Whisper + gpt-4o-mini on a real audio file.
-  Endpoint `app/api/live-call/transcribe`, logic in `lib/transcribe.js`.
-  **← you are here.**
-- **Phase 3b (live)** — this folder will hold the standalone Node service that
-  streams audio from Twilio to a streaming STT (Deepgram) in real time. Not built
-  yet.
+| Path | Who connects | Audio | Transcript goes to |
+|------|--------------|-------|--------------------|
+| `/` | Browser mic | PCM 24 kHz | back to the same browser |
+| `/twilio` | Twilio Media Streams | µ-law 8 kHz | broadcast to `/watch` dashboards |
+| `/watch` | Operator dashboard | — | receives the Twilio call transcript |
 
-## Try Phase 3a (real transcription)
+All paths use **OpenAI Realtime** (`gpt-realtime-whisper`). OpenAI accepts g711 µ-law
+directly (`format: audio/pcmu`), so Twilio audio is **not** transcoded.
 
-1. Add your OpenAI key to `.env.local` (it is **not** committed):
+## Phases
+
+- **Phase 1 (demo)** — fixed script. Endpoint `app/api/live-call/stream`.
+- **Phase 3a (file)** — Whisper + gpt-4o on a real audio file. `app/api/live-call/transcribe`.
+- **Phase 3b-i (live mic)** — browser mic → this service → OpenAI. **Done.**
+- **Phase 3b-ii (Twilio)** — real phone calls. **Code ready; needs a Twilio account.**
+
+## Try 3a (file) / 3b-i (mic)
+
+1. `OPENAI_API_KEY` in `.env.local` (not committed).
+2. Start the service: `cd live-call && npm install && npm start` → `ws://localhost:8787`.
+3. In `/llamada`: **„Echte Aufnahme"** transcribes a file from `samples/`;
+   **„Live (Mikrofon)"** transcribes your mic in real time.
+
+Audio files in `samples/` are git-ignored.
+
+## Phase 3b-ii — Twilio (real calls)
+
+The code is ready (`/twilio` + `/watch` paths). To go live you need a Twilio account.
+
+1. **Twilio account + a phone number** (choose the **EU region** for DSGVO).
+2. The microservice must be reachable at `wss://live.boscohub.duckdns.org/twilio`
+   (already deployed in production via Caddy).
+3. Point the number's **"A call comes in"** to a TwiML Bin with:
+   ```xml
+   <Response>
+     <Start>
+       <Stream url="wss://live.boscohub.duckdns.org/twilio" />
+     </Start>
+     <Dial>+49…NÚMERO_DEL_OPERADOR</Dial>
+   </Response>
    ```
-   OPENAI_API_KEY=sk-...
-   ```
-2. Drop a German (or English) audio file into `live-call/samples/`, e.g.
-   `anruf.mp3` (mp3, wav, m4a, ogg, webm…).
-3. Start the dashboard (`npm run dev`), open **/llamada** and click
-   **„Echte Aufnahme"**. Whisper transcribes the file, gpt-4o-mini extracts the
-   fields, and the screen shows the real transcript with live highlighting.
+   - `<Start><Stream>` forks the call audio to the microservice (does not interfere
+     with the call).
+   - `<Dial>` rings the operator's phone — they answer normally.
+4. The operator opens `/llamada` → **„Telefon (Twilio)"** (subscribes to `/watch`)
+   and sees the live transcript + extracted fields as the call happens.
 
-Audio files in `samples/` are git-ignored (they can be large or contain real
-data). Only `.gitignore` is tracked.
+To go to production for real, forward Don Bosco's number to the Twilio number
+(call forwarding). Diarization (Mitarbeiter/Anrufer) can be done per channel later.
 
-## Try Phase 3b-i (live, microphone)
-
-Real streaming transcription from your browser mic — no Twilio yet.
-
-1. Same `OPENAI_API_KEY` in `.env.local` as above (the service reads it from there).
-2. Start the microservice (separate terminal):
-   ```
-   cd live-call
-   npm install   # first time only
-   npm start     # → live-call listo en ws://localhost:8787
-   ```
-3. With the dashboard running, open **/llamada** and click **„Live (Mikrofon)"**.
-   Allow the mic, start talking (German or English) and watch it transcribe live;
-   the fields on the right fill in every few seconds.
-
-Uses OpenAI Realtime (`gpt-4o-transcribe-diarize`). The browser captures PCM 24 kHz
-via `public/pcm-worklet.js`. In production (Phase 3b-ii) the audio source becomes
-Twilio Media Streams instead of the mic; the microservice stays the same.
+> Current limitation: `/watch` broadcasts to **all** connected dashboards (fine for
+> a pilot). Routing each call to the specific operator who answered is a later step.
 
 ## Cost note
 
-Whisper ≈ $0.006 / audio-minute; the gpt-4o-mini extraction is a few cents.
-A 5-minute call costs roughly 3–4 cents.
+Whisper ≈ $0.006 / audio-minute; gpt-4o extraction is a few cents per call.
+Twilio adds per-minute voice charges. Realtime transcription is billed by OpenAI.
