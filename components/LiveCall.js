@@ -98,7 +98,8 @@ export default function LiveCall() {
 
   // Aplica un evento al estado (mismo formato en SSE y en WebSocket).
   function handleEvent(msg) {
-    if (msg.type === "status") setStatus(msg.value);
+    if (msg.type === "reset") resetState();
+    else if (msg.type === "status") setStatus(msg.value);
     else if (msg.type === "partial") setPartialText(msg.text);
     else if (msg.type === "segment") { setSegments((s) => [...s, msg.seg]); setPartialText(""); }
     else if (msg.type === "fields")
@@ -163,6 +164,17 @@ export default function LiveCall() {
       setToast("Mikrofon nicht verfügbar: " + (err?.message || err));
       setStatus("ended");
     }
+  }
+
+  // Modo Twilio: escucha la transcripción de una llamada REAL (sin micrófono).
+  // Se suscribe a /watch; el microservicio difunde ahí lo que llega por /twilio.
+  function watchTwilio() {
+    closeAll(); resetState();
+    setStatus("listening");
+    const ws = new WebSocket(`${liveWsUrl()}/watch`);
+    wsRef.current = ws;
+    ws.onmessage = (e) => handleEvent(JSON.parse(e.data));
+    ws.onerror = () => { setToast("Keine Verbindung zum live-call Dienst."); setStatus("ended"); };
   }
 
   function hangup() {
@@ -279,6 +291,9 @@ export default function LiveCall() {
               </Btn>
               <Btn kind="secondary" size="sm" onClick={answerLive}>
                 Live (Mikrofon)
+              </Btn>
+              <Btn kind="secondary" size="sm" onClick={watchTwilio}>
+                Telefon (Twilio)
               </Btn>
               <Btn kind="sage" icon="clock" onClick={() => answer("complete")}>
                 {status === "ended" ? "Neuer Anruf" : "Anruf annehmen"}

@@ -48,6 +48,8 @@ jobs:
           N8N_ENCRYPTION_KEY: ${{ secrets.N8N_ENCRYPTION_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
+          # Limpia espacios/saltos que se hayan colado al pegar el secreto.
+          OPENAI_API_KEY=$(printf '%s' "$OPENAI_API_KEY" | tr -d '[:space:]')
           cat > .env <<EOF
           POSTGRES_USER=zuk
           POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -77,11 +79,10 @@ jobs:
           cd /root/Bosco_Hub
           docker compose -f docker-compose.prod.yml up -d --build
           docker image prune -f
-          # Aplica cambios del Caddyfile (login/dominio). El mount de archivo único
-          # queda obsoleto al reemplazar el archivo, así que lo copiamos dentro del
-          # contenedor con "cp" y recargamos Caddy sin downtime.
-          docker compose -f docker-compose.prod.yml cp Caddyfile caddy:/etc/caddy/Caddyfile || true
-          docker compose -f docker-compose.prod.yml exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile || true
+          # Recrea Caddy para que cargue el Caddyfile actual del host (nuevos
+          # dominios/login). NO sirve "cp + reload": el Caddyfile está montado :ro
+          # y el cp falla ("device or resource busy"). force-recreate sí aplica.
+          docker compose -f docker-compose.prod.yml up -d --force-recreate caddy
           ENDSSH
 
       - name: Sincronizar workflows de n8n desde git
