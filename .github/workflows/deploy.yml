@@ -48,8 +48,9 @@ jobs:
           N8N_ENCRYPTION_KEY: ${{ secrets.N8N_ENCRYPTION_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          # Limpia espacios/saltos que se hayan colado al pegar el secreto.
-          OPENAI_API_KEY=$(printf '%s' "$OPENAI_API_KEY" | tr -d '[:space:]')
+          # Deja solo los caracteres válidos de una API key (quita espacios,
+          # saltos y cualquier carácter invisible que se cuele al pegar el secreto).
+          OPENAI_API_KEY=$(printf '%s' "$OPENAI_API_KEY" | tr -cd 'A-Za-z0-9_-')
           cat > .env <<EOF
           POSTGRES_USER=zuk
           POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
