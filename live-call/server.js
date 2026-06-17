@@ -163,8 +163,9 @@ function handleTwilio(twilio) {
 
 // ── /watch : un dashboard que quiere ver la llamada Twilio en curso ────────────
 function handleWatch(ws) {
+  // No mandamos status al conectar: el dashboard se queda "a la espera" (listening)
+  // hasta que entre una llamada por /twilio, que difunde reset + transcripción.
   watchers.add(ws);
-  ws.send(JSON.stringify({ type: "status", value: "idle" }));
   ws.on("close", () => watchers.delete(ws));
 }
 
