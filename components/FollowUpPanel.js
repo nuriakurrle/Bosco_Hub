@@ -26,7 +26,7 @@ const inputStyle = {
   background: "#fff",
 };
 
-export default function FollowUpPanel({ item, missing = [], onSend }) {
+export default function FollowUpPanel({ item, missing = [], onSend, makeDraft }) {
   const [open, setOpen] = useState(false);
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
@@ -39,7 +39,7 @@ export default function FollowUpPanel({ item, missing = [], onSend }) {
 
   // Beim Öffnen aus den aktuell fehlenden Feldern frisch erzeugen.
   function openComposer() {
-    const draft = buildInquiryFollowUp(item, missing);
+    const draft = makeDraft ? makeDraft() : buildInquiryFollowUp(item, missing);
     setTo(draft.to);
     setSubject(draft.subject);
     setBody(draft.body);

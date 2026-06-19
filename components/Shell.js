@@ -21,8 +21,8 @@ export default function Shell({ active, staff = [], me, children }) {
       {/* Linke Navigation */}
       <aside className="app-nav">
         <Link href="/" className="app-brand">
-          <span className="mark">DB</span>
-          <span className="app-brand-name">Belegung</span>
+          <img src="/logo.png" alt="ZUK Benediktbeuern" className="brand-logo" />
+          <span className="app-brand-name">Bosco Hub</span>
         </Link>
 
         <nav className="app-nav-list">

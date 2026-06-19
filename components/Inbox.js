@@ -151,6 +151,7 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
   const nUrgent = groups.filter((g) => urgencyOf(g) === "urgent").length;
 
   const teamLoad = staff.map((s) => ({ ...s, n: open.filter((g) => g.primary.assignedTo === s.key).length }));
+  const loadByKey = Object.fromEntries(teamLoad.map((t) => [t.key, t.n]));
   const areaCounts = {};
   open.forEach((g) => {
     const l = areaOf(g);
@@ -245,7 +246,7 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
               <span className="route-area-dot" style={{ background: areaColor(area) }} />
               <span className="rc-house">{areaLabel(area)}</span>
             </span>
-            <AssignControl id={i.id} who={i.assignedTo} suggest={suggest} onAssign={onAssign} staff={staff} me={me} />
+            <AssignControl id={i.id} who={i.assignedTo} suggest={suggest} onAssign={onAssign} staff={staff} me={me} loadByKey={loadByKey} />
           </div>
           <div style={{ display: "flex", alignItems: "center", padding: "0 12px", color: "var(--db-text-faint)" }}>
             <Icon d={I.chevron} size={18} />

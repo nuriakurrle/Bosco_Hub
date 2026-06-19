@@ -808,6 +808,28 @@ body {
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 9.5px; font-weight: 700; color: var(--db-primary);
 }
+.assignee-caret { opacity: .5; margin-left: 1px; transform: rotate(90deg); }
+
+/* Personen-Auswahl-Menü (fixed, weil die Anfrage-Karte overflow:hidden hat) */
+.assign-menu {
+  display: flex; flex-direction: column; gap: 2px; min-width: 224px; max-width: 280px;
+  padding: 6px; background: var(--db-paper); border: 1px solid var(--db-line);
+  border-radius: var(--db-radius); box-shadow: 0 12px 32px -8px rgba(40, 20, 25, 0.32);
+}
+.assign-menu-head { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--db-text-faint); padding: 4px 8px 6px; }
+.assign-opt {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 7px 8px; border: 0; border-radius: 8px; background: transparent; cursor: pointer;
+}
+.assign-opt:hover { background: var(--db-paper-2); }
+.assign-opt.current { background: var(--db-secondary-tint); }
+.assign-opt-text { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.25; }
+.assign-opt-name { font-size: 13px; font-weight: 600; color: var(--db-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assign-opt-sub { font-size: 11px; color: var(--db-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assign-tag { font-size: 10px; font-weight: 700; color: #7a4a14; background: var(--db-warn-tint); border-radius: 6px; padding: 2px 6px; flex-shrink: 0; }
+.assign-load { font-size: 11px; color: var(--db-text-muted); min-width: 16px; text-align: right; flex-shrink: 0; }
+.assign-opt.clear { margin-top: 2px; border-top: 1px solid var(--db-line); border-radius: 0 0 6px 6px; color: var(--db-error); font-size: 12px; font-weight: 600; gap: 6px; }
+.assign-opt.clear:hover { background: var(--db-error-tint); }
 
 /* Age badge */
 .age-badge { font-family: var(--db-font-mono); font-size: 11px; color: var(--db-text-muted); text-align: right; }
@@ -829,6 +851,16 @@ body {
 }
 .split-kv { display: flex; align-items: center; gap: 6px; font-size: 12px; }
 .split-kv .k { color: var(--db-text-faint); font-size: 10.5px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; width: 64px; flex-shrink: 0; }
+/* Aufgeklappte Klasse spannt volle Breite + hebt sich ab */
+.split-req.expanded { box-shadow: 0 8px 24px -10px rgba(40, 20, 25, 0.28); border-color: var(--db-line-strong); }
+/* Vollständigkeits-Zeile + Aufklapp-Schalter je Klasse */
+.split-fieldbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px dashed var(--db-line); padding-top: 7px; }
+.split-toggle {
+  display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; cursor: pointer;
+  font-size: 11.5px; font-weight: 600; color: var(--db-primary); padding: 0;
+}
+.split-toggle:hover { text-decoration: underline; }
+.split-fields { display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--db-line); padding-top: 8px; }
 
 /* History / known-customer note */
 .kc-note {
@@ -1321,11 +1353,9 @@ a { color: inherit; text-decoration: none; }
   color: #fbf6e9; display: flex; flex-direction: column; padding: 14px 12px;
   overflow-y: auto;
 }
-.app-brand { display: flex; align-items: center; gap: 9px; padding: 4px 8px 14px; font-family: var(--db-font-serif); font-size: 17px; }
-.app-brand .mark {
-  width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,0.16);
-  display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: var(--db-font-sans);
-}
+.app-brand { display: flex; align-items: flex-end; gap: 9px; padding: 18px 8px 16px; font-family: var(--db-font-serif); font-size: 17px; }
+.app-brand .brand-logo { height: 50px; width: auto; display: block; flex-shrink: 0; }
+.app-brand-name { font-size: 20px; font-weight: 600; line-height: 1.1; padding-bottom: 4px; }
 .app-nav-section { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: rgba(251,246,233,0.5); padding: 10px 8px 4px; }
 .app-nav-list { display: flex; flex-direction: column; gap: 2px; }
 .app-nav-item {

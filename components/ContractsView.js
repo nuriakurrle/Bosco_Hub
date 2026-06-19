@@ -45,6 +45,8 @@ export default function ContractsView({ data }) {
   const [sort, setSort] = useState("urgency");
   // Aktiver KPI-Filter (klickbare Karte): null | draft | sent | signed | overdue.
   const [focus, setFocus] = useState(null);
+  // Buchung, deren Aktions-Menü („⋯") gerade offen ist (oder null).
+  const [menuId, setMenuId] = useState(null);
 
   async function setStatus(id, status) {
     setItems((list) =>
@@ -173,26 +175,25 @@ export default function ContractsView({ data }) {
                 <div key={b.id} className="contract-row">
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontWeight: 700, fontSize: 13.5 }}>{b.title}</span>
-                      <Pill tone={b.deadline.tone === "neutral" ? "neutral" : b.deadline.tone} dot={b.deadline.tone === "error"}>
-                        {b.deadline.tone === "error" && <Icon d={I.alert} size={10} />} {b.deadline.label}
-                      </Pill>
+                      <span style={{ fontWeight: 700, fontSize: 16 }}>{b.title}</span>
+                      {/* Frist-Ampel nur im Entwurf — in Versendet/Bestätigt wiederholt sie nur den Gruppennamen */}
+                      {b.contractStatus === "draft" && (
+                        <Pill tone={b.deadline.tone === "neutral" ? "neutral" : b.deadline.tone} dot={b.deadline.tone === "error"}>
+                          {b.deadline.tone === "error" && <Icon d={I.alert} size={10} />} {b.deadline.label}
+                        </Pill>
+                      )}
                     </div>
-                    <div className="db-muted" style={{ fontSize: 12, marginTop: 2 }}>
+                    <div className="db-muted" style={{ fontSize: 13.5, marginTop: 3 }}>
                       {b.house} · {b.program || "Aufenthalt"}{b.contact ? ` · ${b.contact}` : ""}
                     </div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div className="mono" style={{ fontSize: 12.5, fontWeight: 600 }}>{b.dates}</div>
-                    <div className="db-faint" style={{ fontSize: 11.5 }}>
-                      <Icon d={I.users} size={11} style={{ verticalAlign: -1 }} /> {b.people}{b.people !== "—" ? " Pers." : ""}
+                    <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>{b.dates}</div>
+                    <div className="db-faint" style={{ fontSize: 12 }}>
+                      <Icon d={I.users} size={12} style={{ verticalAlign: -1 }} /> {b.people}{b.people !== "—" ? " Pers." : ""}
                     </div>
                   </div>
-                  <div className="contract-actions">
-                    <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => setEditing({ ...b })} title="Buchung bearbeiten">
-                      <Icon d={I.pencil} size={12} /> bearbeiten
-                    </button>
-                    <ContractButton booking={b} onSaveText={(text) => saveText(b.id, text)} />
+                  <div className="contract-actions" style={{ position: "relative" }}>
                     {b.contractStatus === "draft" && (
                       <button className="db-btn db-btn-sage db-btn-sm" onClick={() => setStatus(b.id, "sent")}>
                         <Icon d={I.send} size={12} /> versendet
@@ -203,10 +204,28 @@ export default function ContractsView({ data }) {
                         <Icon d={I.check} size={12} /> bestätigt
                       </button>
                     )}
-                    {b.contractStatus === "signed" && (
-                      <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => setStatus(b.id, "draft")} title="zurücksetzen">
-                        <Icon d={I.refresh} size={12} />
-                      </button>
+                    <button
+                      className={`db-btn db-btn-sm ${menuId === b.id ? "db-btn-primary" : "db-btn-ghost"}`}
+                      onClick={() => setMenuId(menuId === b.id ? null : b.id)}
+                      title="Weitere Aktionen"
+                    >
+                      <Icon d={I.more} size={14} />
+                    </button>
+                    {menuId === b.id && (
+                      <>
+                        <div className="booking-menu-overlay" onClick={() => setMenuId(null)} />
+                        <div className="booking-menu">
+                          <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => { setMenuId(null); setEditing({ ...b }); }}>
+                            <Icon d={I.pencil} size={12} /> Bearbeiten
+                          </button>
+                          <ContractButton booking={b} onSaveText={(text) => saveText(b.id, text)} />
+                          {b.contractStatus === "signed" && (
+                            <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => { setMenuId(null); setStatus(b.id, "draft"); }}>
+                              <Icon d={I.refresh} size={12} /> zurücksetzen
+                            </button>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>

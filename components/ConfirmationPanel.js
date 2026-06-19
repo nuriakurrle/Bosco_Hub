@@ -25,15 +25,23 @@ const inputStyle = {
   background: "#fff",
 };
 
-export default function ConfirmationPanel({ item }) {
-  const draft = buildConfirmationDraft(item);
+export default function ConfirmationPanel({ item, makeDraft }) {
   const [open, setOpen] = useState(false);
-  const [to, setTo] = useState(draft.to);
-  const [subject, setSubject] = useState(draft.subject);
-  const [body, setBody] = useState(draft.body);
+  const [to, setTo] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
   const [sent, setSent] = useState(Boolean(item.confirmationSentAt));
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+
+  // Entwurf beim Öffnen frisch erzeugen (übernimmt zwischenzeitliche Änderungen).
+  function openComposer() {
+    const draft = makeDraft ? makeDraft() : buildConfirmationDraft(item);
+    setTo(draft.to);
+    setSubject(draft.subject);
+    setBody(draft.body);
+    setOpen(true);
+  }
 
   async function send() {
     setSending(true);
@@ -75,7 +83,7 @@ export default function ConfirmationPanel({ item }) {
         <b style={{ fontSize: 12.5 }}>Kundenbestätigung</b>
         {!open && (
           <span style={{ marginLeft: "auto" }}>
-            <Btn kind="sage" size="sm" icon="mail" onClick={() => setOpen(true)}>
+            <Btn kind="sage" size="sm" icon="mail" onClick={openComposer}>
               Bestätigung vorbereiten
             </Btn>
           </span>
