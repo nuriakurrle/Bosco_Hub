@@ -1,0 +1,13 @@
+{
+  "name": "bosco-live-call",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Microservicio de transcripción en vivo (Fase 3b): audio → OpenAI Realtime → dashboard.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

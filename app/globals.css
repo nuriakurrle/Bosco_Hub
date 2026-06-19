@@ -1685,3 +1685,20 @@ a { color: inherit; text-decoration: none; }
 .cal-res-n { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 14px; text-align: right; color: var(--db-text-muted); }
 .cal-res-foot { margin-top: 11px; font-size: 11.5px; }
 @media (max-width: 720px) { .cal-res-grid { grid-template-columns: 1fr; } }
+
+/* ───────────────────────────────────────────────
+   Live-Anruf: colores de resaltado por tipo de entidad
+   (sobre la base .tr-mark del transcript)
+   ─────────────────────────────────────────────── */
+.tr-mark--school    { background: var(--db-primary-tint);  border-bottom-color: var(--db-primary); }
+.tr-mark--contact   { background: #ece8de;                 border-bottom-color: var(--db-text-muted); }
+.tr-mark--program   { background: var(--db-warn-tint);     border-bottom-color: var(--db-warn); }
+.tr-mark--date      { background: var(--db-info-tint);     border-bottom-color: var(--db-info); }
+.tr-mark--people    { background: var(--db-success-tint);  border-bottom-color: var(--db-success); }
+.tr-mark--grade     { background: var(--db-secondary-tint);border-bottom-color: var(--db-secondary); }
+.tr-mark--sensitive { background: var(--db-error-tint);    border-bottom-color: var(--db-error); }
+.tr-mark.hot        { box-shadow: 0 0 0 2px rgba(107,30,45,.28); }
+
+/* Datos sensibles: difuminados hasta que el operador hace clic (DSGVO) */
+.is-blur { filter: blur(4.5px); cursor: pointer; transition: filter .15s; }
+.is-blur:hover { filter: blur(2.5px); }
