@@ -86,7 +86,7 @@ export default function ContractsView({ data }) {
   // KPI-Karten doppeln als Filter (key = focus-Wert).
   const KPIS = [
     { key: "draft", tone: "warn", icon: "doc", label: "Entwurf nötig", val: kpi.draft },
-    { key: "overdue", tone: "error", icon: "alert", label: "Überfällig", val: kpi.overdue },
+    { key: "overdue", tone: kpi.overdue > 0 ? "error" : "neutral", icon: "alert", label: "Überfällig", val: kpi.overdue },
     { key: "sent", tone: "info", icon: "send", label: "Versendet", val: kpi.sent },
     { key: "signed", tone: "success", icon: "check", label: "Bestätigt", val: kpi.signed },
   ];

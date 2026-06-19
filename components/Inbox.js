@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
-import { Pill, StatCard } from "@/components/ui";
+import { Pill, StatCard, EmptyState } from "@/components/ui";
 import AssignControl from "@/components/AssignControl";
 import { areaColor, areaLabel, suggestedPerson } from "@/lib/team";
 
@@ -332,9 +332,27 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
         <div className="inbox-grid" style={{ maxWidth: 1480, margin: "0 auto" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
           {rows.length === 0 ? (
-            <div className="db-muted" style={{ textAlign: "center", padding: 40 }}>
-              {q ? "Keine Treffer für die Suche." : "Keine Anfragen in diesem Filter."}
-            </div>
+            q ? (
+              <EmptyState
+                icon="search"
+                title="Keine Treffer"
+                hint={`Für „${query}" wurde nichts gefunden. Suche anpassen oder zurücksetzen.`}
+                action={<button className="db-btn db-btn-secondary db-btn-sm" onClick={() => router.push("/posteingang")}>Suche zurücksetzen</button>}
+              />
+            ) : filter !== "all" ? (
+              <EmptyState
+                icon="inbox"
+                title="Nichts in diesem Filter"
+                hint="In diesem Filter liegen gerade keine Anfragen."
+                action={<button className="db-btn db-btn-secondary db-btn-sm" onClick={() => setFilter("all")}>Alle anzeigen</button>}
+              />
+            ) : (
+              <EmptyState
+                icon="inbox"
+                title="Posteingang ist leer"
+                hint="Neue Anfragen aus E-Mail (über n8n) und Telefon erscheinen hier automatisch."
+              />
+            )
           ) : grouped ? (
             SECTIONS.map(([title, pred]) => {
               const arr = rows.filter(pred);

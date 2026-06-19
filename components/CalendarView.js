@@ -332,7 +332,22 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
           )}
         </div>
 
-        {/* Raster */}
+        {/* Leerer Monat: prominenter Hinweis statt bildschirmhohem Leerraster */}
+        {monthCount === 0 ? (
+          <div className="db-empty-state" style={{ padding: "40px 24px" }}>
+            <span className="es-ico"><Icon d={I.calendar} size={22} /></span>
+            <div className="es-title">Keine Belegung im {MONTHS[cursor.m]} {cursor.y}</div>
+            <div className="es-hint">In diesem Monat sind keine Gruppen mit festem Zeitraum eingetragen.</div>
+            {jumpTarget && (
+              <div className="es-action">
+                <button className="db-btn db-btn-secondary db-btn-sm" onClick={() => goToMonth(jumpTarget.date)}>
+                  <Icon d={I.calendar} size={12} />
+                  {jumpTarget.dir === "next" ? "Nächste" : "Letzte"} Belegung: {MONTHS[jumpTarget.date.getMonth()]} {jumpTarget.date.getFullYear()}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
         <div className="cal-grid">
           <div className="cal-weekdays">
             {WEEKDAYS.map((w, i) => (
@@ -397,6 +412,7 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
             </div>
           ))}
         </div>
+        )}
 
         {/* Legende */}
         <div className="cal-legend">
@@ -422,18 +438,6 @@ export default function CalendarView({ bookings = [], houses = [], staff = [] })
             <span className="cal-legend-item"><span className="cal-bar-dot" style={{ background: CONTRACT_DOT.signed }} /> bestätigt</span>
           </span>
         </div>
-
-        {monthCount === 0 && (
-          <div style={{ textAlign: "center", padding: "18px 0 0", fontSize: 13, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <span className="db-muted">Keine Buchungen mit festem Zeitraum in {MONTHS[cursor.m]} {cursor.y}.</span>
-            {jumpTarget && (
-              <button className="db-btn db-btn-secondary db-btn-sm" onClick={() => goToMonth(jumpTarget.date)}>
-                <Icon d={I.calendar} size={12} />
-                {jumpTarget.dir === "next" ? "Nächste" : "Letzte"} Belegung: {MONTHS[jumpTarget.date.getMonth()]} {jumpTarget.date.getFullYear()}
-              </button>
-            )}
-          </div>
-        )}
 
         {/* Referenten-Kapazität je Format — einklappbar, damit der Kalender im Fokus bleibt */}
         <div className="cal-resource">

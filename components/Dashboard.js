@@ -29,6 +29,9 @@ export default function Dashboard({ data }) {
   const xLabels = series.length
     ? [series[0].label, series[Math.floor(series.length / 2)].label, series[series.length - 1].label]
     : [];
+  // Chart-eigene Kennzahlen (statt Redundanz zur KPI-Karte oben).
+  const total14 = series.reduce((s, p) => s + p.n, 0);
+  const peak14 = series.length ? Math.max(...series.map((p) => p.n)) : 0;
 
   return (
     <div className="dash-wrap db-scroll">
@@ -58,6 +61,7 @@ export default function Dashboard({ data }) {
           <StatCard tone="success" icon="bed" label="Buchungen" value={kpis.bookings}
             sub={`${kpis.guests} Gäste gesamt`} />
           <StatCard tone="primary" icon="spark" label="Neu diese Woche" value={kpis.thisWeek}
+            delta={kpis.thisWeekDelta}
             sub={`${kpis.checkinToday} Check-in heute`} />
         </div>
 
@@ -81,12 +85,12 @@ export default function Dashboard({ data }) {
           <Card title="Anfragen-Eingang" kicker="letzte 14 Tage">
             <div className="mini-stats">
               <div className="mini-stat">
-                <div className="mini-stat-label">Diese Woche</div>
-                <div className="mini-stat-val">{kpis.thisWeek}</div>
+                <div className="mini-stat-label">14 Tage gesamt</div>
+                <div className="mini-stat-val">{total14}</div>
               </div>
               <div className="mini-stat">
-                <div className="mini-stat-label">Nicht zugewiesen</div>
-                <div className="mini-stat-val" style={{ color: "var(--db-warn)" }}>{kpis.unassigned}</div>
+                <div className="mini-stat-label">Spitze / Tag</div>
+                <div className="mini-stat-val">{peak14}</div>
               </div>
             </div>
             <AreaLine points={series} />
@@ -123,18 +127,21 @@ export default function Dashboard({ data }) {
           <Card title="Auslastung je Haus" kicker="Betten · geschätzt">
             <div className="house-list">
               {houses.map((h) => {
-                const pct = h.ratio != null ? Math.round(h.ratio * 100) : null;
-                const tone = pct == null ? "ok" : pct >= 100 ? "full" : pct >= 85 ? "tight" : "ok";
+                // Echten Prozentsatz (ungekappt) für die Überbuchungs-Erkennung.
+                const pct = h.capacity ? Math.round((h.people / h.capacity) * 100) : null;
+                const over = pct != null && pct > 100;
+                const tone = pct == null ? "ok" : over ? "over" : pct >= 85 ? "tight" : "ok";
                 return (
                   <div key={h.house} className="house-row">
                     <div className="house-top">
                       <span className="house-name">{h.house}</span>
                       <span className="mono house-num">
                         {h.capacity ? `${h.people}/${h.capacity}` : `${h.people}`} · {h.bookings} Buch.
+                        {over && <Pill tone="error" dot={false}>überbucht · {pct}%</Pill>}
                       </span>
                     </div>
                     <div className="cap-track">
-                      <div className={`cap-fill ${tone}`} style={{ width: `${pct ?? 0}%` }} />
+                      <div className={`cap-fill ${tone}`} style={{ width: `${Math.min(100, pct ?? 0)}%` }} />
                     </div>
                   </div>
                 );

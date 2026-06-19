@@ -17,7 +17,7 @@ export default function SearchBox() {
   }
 
   return (
-    <form className="db-search" style={{ maxWidth: 320 }} onSubmit={submit}>
+    <form className="db-search" onSubmit={submit}>
       <Icon d={I.search} size={14} />
       <input
         value={v}

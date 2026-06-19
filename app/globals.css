@@ -9,6 +9,7 @@
   --db-paper-2: #FBFAF6;        /* Subtle inset surface */
   --db-secondary: #7A8F7A;      /* Sage — secondary actions, neutral-positive */
   --db-secondary-tint: #e8eee8;
+  --db-secondary-ink: #3f5240;  /* Darker sage for text (WCAG AA on light) */
   --db-text: #2A2A2A;
   --db-text-muted: #6b6863;
   --db-text-faint: #9a958c;
@@ -444,7 +445,7 @@ body {
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
   margin-top: 1px;
 }
-.tr-spk.staff { color: var(--db-secondary); }
+.tr-spk.staff { color: var(--db-secondary-ink); }
 .tr-spk.caller { color: var(--db-primary); }
 .tr-text { font-size: 13px; line-height: 1.5; color: #3a3530; }
 .tr-mark {
@@ -1015,6 +1016,9 @@ a { color: inherit; text-decoration: none; }
 .cap-fill.ok    { background: var(--db-secondary); }
 .cap-fill.tight { background: var(--db-warn); }
 .cap-fill.full  { background: var(--db-error); }
+.cap-fill.over  { background: #6f1717; }
+[data-theme="dark"] .cap-fill.over { background: #c2564e; }
+.house-num .db-pill { margin-left: 6px; }
 .cap-slots { flex: 1; display: flex; gap: 4px; }
 .cap-slot {
   flex: 1; height: 8px; border-radius: 3px;
@@ -1163,6 +1167,21 @@ a { color: inherit; text-decoration: none; }
 .stat-label { font-size: 11.5px; color: var(--db-text-muted); font-weight: 600; }
 .stat-value { font-size: 27px; font-weight: 700; line-height: 1.15; color: var(--stat-ink); font-variant-numeric: tabular-nums; }
 .stat-sub { font-size: 11.5px; color: var(--db-text-muted); }
+.stat-delta { font-size: 11px; color: var(--db-text-faint); font-variant-numeric: tabular-nums; margin-top: 1px; }
+
+/* Status-Dot im Ampel-Vokabular — eine Quelle für alle Seiten. */
+.status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--db-line-strong); }
+.status-dot.success, .status-dot.done { background: var(--db-success); }
+.status-dot.warn { background: var(--db-warn); }
+.status-dot.error, .status-dot.urgent { background: var(--db-error); }
+.status-dot.info { background: var(--db-info); }
+
+/* Freundlicher Leerzustand. */
+.db-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 48px 24px; }
+.db-empty-state .es-ico { width: 46px; height: 46px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--db-primary-tint); color: var(--db-primary); }
+.db-empty-state .es-title { font-size: 14px; font-weight: 600; color: var(--db-text); }
+.db-empty-state .es-hint { font-size: 12.5px; color: var(--db-text-muted); max-width: 44ch; }
+.db-empty-state .es-action { margin-top: 6px; }
 
 /* Reihe 2: Donut + Linie */
 .dash-row2 { display: grid; grid-template-columns: 340px 1fr; gap: 14px; margin-bottom: 14px; }
@@ -1376,9 +1395,17 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; gap: 12px; padding: 10px 22px;
   border-bottom: 1px solid var(--db-line); background: var(--db-paper);
 }
-/* Suche in der hellen Topbar (statt dunkler Kopfzeile) */
-.app-topbar .db-search { background: var(--db-bg); border: 1px solid var(--db-line); color: var(--db-text-muted); }
-.app-topbar .db-search input { color: var(--db-text); }
+/* Suche in der hellen Topbar (statt dunkler Kopfzeile).
+   Layout muss hier explizit stehen — es war nur an .db-header gebunden. */
+.app-topbar .db-search {
+  width: 340px; height: 34px; border-radius: 7px; padding: 0 12px;
+  display: flex; align-items: center; gap: 8px; font-size: 12.5px;
+  background: var(--db-bg); border: 1px solid var(--db-line); color: var(--db-text-muted);
+}
+.app-topbar .db-search input {
+  flex: 1; min-width: 0; border: none; background: transparent; outline: none;
+  font: inherit; color: var(--db-text);
+}
 .app-topbar .db-search input::placeholder { color: var(--db-text-faint); }
 .app-topbar .db-chip { background: var(--db-bg); border: 1px solid var(--db-line); color: var(--db-text-muted); }
 .app-topbar .db-chip:hover { background: var(--db-paper-2); }
@@ -1462,7 +1489,7 @@ a { color: inherit; text-decoration: none; }
 .tr-meta { text-align: right; }
 .tr-time { font-family: var(--db-font-mono); font-size: 10.5px; color: var(--db-text-faint); }
 .tr-spk { font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-top: 1px; }
-.tr-spk.staff { color: var(--db-secondary); }
+.tr-spk.staff { color: var(--db-secondary-ink); }
 .tr-spk.caller { color: var(--db-primary); }
 .tr-text { font-size: 13px; line-height: 1.55; color: var(--db-text); }
 .tr-mark { background: #fff4c5; border-bottom: 1.5px dotted #b89a2a; border-radius: 2px; padding: 0 2px; }
@@ -1565,6 +1592,7 @@ a { color: inherit; text-decoration: none; }
   --db-paper-2: #272219;
   --db-secondary: #8aa088;
   --db-secondary-tint: #243026;
+  --db-secondary-ink: #a7bda5;
   --db-text: #ece6da;
   --db-text-muted: #b7ad9c;
   --db-text-faint: #867c6c;

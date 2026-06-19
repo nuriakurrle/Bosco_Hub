@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
-import { Pill, Btn, Card } from "@/components/ui";
+import { Pill, Btn, Card, ChannelPill } from "@/components/ui";
 import AssignControl from "@/components/AssignControl";
 import ConfirmationPanel from "@/components/ConfirmationPanel";
 import FollowUpPanel from "@/components/FollowUpPanel";
@@ -20,15 +20,22 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
   const router = useRouter();
   const [activeKey, setActiveKey] = useState(null);
 
-  async function mergeWith(targetId) {
+  // Zusammenführen ist ein Human-in-the-Loop-Schritt: erst öffnet sich ein
+  // Bestätigungs-Dialog (mergeCandidate), der beide Anfragen gegenüberstellt;
+  // erst nach „Ja, zusammenführen" wird wirklich verknüpft.
+  async function confirmMerge() {
+    if (!mergeCandidate) return;
+    setMerging(true);
     try {
       await fetch(`/api/inquiries/${item.id}/merge`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetId }),
+        body: JSON.stringify({ targetId: mergeCandidate.id }),
       });
+      setMergeCandidate(null);
       router.refresh();
     } catch {
+      setMerging(false);
       showToast("Zusammenführen fehlgeschlagen.");
     }
   }
@@ -43,6 +50,8 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
   const [editing, setEditing] = useState(null);
   const [created, setCreated] = useState(alreadyBooked);
   const [toast, setToast] = useState(null);
+  const [mergeCandidate, setMergeCandidate] = useState(null);
+  const [merging, setMerging] = useState(false);
   // Human-in-the-loop: Pflicht-Verifizierung + Bestätigung fehlender Infos.
   const [verifyChecked, setVerifyChecked] = useState(alreadyBooked);
   const [verifiedAt, setVerifiedAt] = useState(null);
@@ -301,16 +310,13 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                 </div>
                 {related.map((r) => (
                   <div key={r.id} className="rel-row">
-                    <span className={`db-pill ${r.channel === "phone" ? "db-pill-burgundy" : "db-pill-info"}`}>
-                      <Icon d={r.channel === "phone" ? I.clock : I.mail} size={10} />
-                      {r.channel === "phone" ? "Telefon" : "E-Mail"}
-                    </span>
+                    <ChannelPill channel={r.channel} />
                     <span style={{ flex: 1, minWidth: 0, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {r.summary} <span className="db-faint">· {r.received}</span>
                       {r.crossChannel && <span className="note-tag other">anderer Kanal</span>}
                     </span>
                     <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push(`/inquiry/${r.id}`)}>öffnen</button>
-                    <button className="db-btn db-btn-sage db-btn-sm" onClick={() => mergeWith(r.id)}>
+                    <button className="db-btn db-btn-sage db-btn-sm" onClick={() => setMergeCandidate(r)}>
                       <Icon d={I.link} size={11} /> zusammenführen
                     </button>
                   </div>
@@ -406,6 +412,87 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
           </div>
         </section>
       </div>
+
+      {mergeCandidate && (
+        <div className="modal-backdrop" onClick={() => !merging && setMergeCandidate(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <Icon d={I.link} size={15} />
+              <b>Anfragen zusammenführen — bitte prüfen</b>
+              <button className="modal-x" onClick={() => setMergeCandidate(null)} disabled={merging}>
+                <Icon d={I.x} size={14} />
+              </button>
+            </div>
+
+            <div style={{ padding: 16, overflowY: "auto" }}>
+              <p className="db-muted" style={{ fontSize: 12.5, marginTop: 0, marginBottom: 14 }}>
+                Gehören diese beiden Anfragen wirklich zum selben Vorgang? Bitte vergleichen und
+                bestätigen. Nach dem Zusammenführen erscheinen sie als <b>ein</b> gemeinsamer Fall.
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {[
+                  {
+                    label: "Dieser Vorgang",
+                    channel: item.channel,
+                    school: item.school,
+                    contact: item.from,
+                    summary: item.summary,
+                    received: item.receivedAbs || item.received,
+                  },
+                  {
+                    label: "Verknüpfen mit",
+                    channel: mergeCandidate.channel,
+                    school: mergeCandidate.school,
+                    contact: null,
+                    summary: mergeCandidate.summary,
+                    received: mergeCandidate.received,
+                  },
+                ].map((s, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      border: "1px solid var(--db-line)",
+                      borderRadius: 8,
+                      padding: 12,
+                      background: "var(--db-paper-2)",
+                    }}
+                  >
+                    <div
+                      className="db-faint"
+                      style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}
+                    >
+                      {s.label}
+                    </div>
+                    <ChannelPill channel={s.channel} />
+                    <div style={{ fontWeight: 600, fontSize: 13, marginTop: 8 }}>{s.school || "—"}</div>
+                    {s.contact && <div style={{ fontSize: 12 }}>{s.contact}</div>}
+                    <div style={{ fontSize: 12, color: "var(--db-text-muted)", marginTop: 6 }}>{s.summary}</div>
+                    {s.received && (
+                      <div className="db-faint" style={{ fontSize: 11, marginTop: 6 }}>{s.received}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="db-muted" style={{ marginTop: 12, fontSize: 12 }}>
+                Namens-Übereinstimmung: <b>{mergeCandidate.score}%</b>
+                {mergeCandidate.crossChannel && <span className="note-tag other">anderer Kanal</span>}
+              </div>
+            </div>
+
+            <div className="modal-foot">
+              <span style={{ flex: 1 }} />
+              <Btn kind="secondary" size="sm" onClick={() => setMergeCandidate(null)} disabled={merging}>
+                Abbrechen
+              </Btn>
+              <Btn kind="sage" size="sm" icon="link" onClick={confirmMerge} disabled={merging}>
+                {merging ? "Wird verknüpft…" : "Ja, zusammenführen"}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div

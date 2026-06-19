@@ -11,6 +11,7 @@ const NAV = [
   { key: "dashboard", href: "/", label: "Übersicht", icon: "house" },
   { key: "kalender", href: "/kalender", label: "Kalender", icon: "calendar" },
   { key: "inbox", href: "/posteingang", label: "Posteingang", icon: "inbox" },
+  { key: "live", href: "/llamada", label: "Telefon", icon: "clock" },
   { key: "buchungen", href: "/buchungen", label: "Buchungen", icon: "bed" },
   { key: "vertraege", href: "/vertraege", label: "Verträge", icon: "doc" },
 ];
