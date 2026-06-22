@@ -80,6 +80,13 @@ jobs:
           cd /root/Bosco_Hub
           docker compose -f docker-compose.prod.yml up -d --build
           docker image prune -f
+          # Sincroniza el esquema de Postgres en cada deploy. init.sql SOLO corre
+          # cuando el volumen está vacío (primer arranque); al cambiar el esquema
+          # (nuevas columnas/tablas) hay que re-aplicarlo. Las migraciones del final
+          # son idempotentes (ALTER/CREATE IF NOT EXISTS); los INSERT de seed que ya
+          # existen fallan por PK y se ignoran (por eso "|| true").
+          docker compose -f docker-compose.prod.yml exec -T postgres pg_isready -U zuk -t 30 || true
+          cat n8n/init.sql | docker compose -f docker-compose.prod.yml exec -T postgres psql -U zuk -d zuk -v ON_ERROR_STOP=0 || true
           # Recrea Caddy para que cargue el Caddyfile actual del host (nuevos
           # dominios/login). NO sirve "cp + reload": el Caddyfile está montado :ro
           # y el cp falla ("device or resource busy"). force-recreate sí aplica.
