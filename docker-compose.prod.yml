@@ -95,8 +95,13 @@ services:
       context: ./live-call
     container_name: zuk-live-call
     restart: unless-stopped
+    depends_on:
+      - dashboard
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Al colgar, el microservicio guarda la llamada llamando al dashboard. En la
+      # red de Docker el dashboard es el servicio `dashboard`, NO localhost.
+      - DASHBOARD_URL=http://dashboard:3000
       - TZ=Europe/Berlin
 
   caddy:

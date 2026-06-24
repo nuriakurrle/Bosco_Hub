@@ -6,6 +6,7 @@ import { Icon, I } from "@/components/icons";
 import SearchBox from "@/components/SearchBox";
 import UserSwitcher from "@/components/UserSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
+import CallNotifier from "@/components/CallNotifier";
 
 const NAV = [
   { key: "dashboard", href: "/", label: "Übersicht", icon: "house" },
@@ -55,6 +56,7 @@ export default function Shell({ active, staff = [], me, children }) {
         <div className="app-topbar">
           <SearchBox />
           <span style={{ flex: 1 }} />
+          <CallNotifier />
           <ThemeToggle />
           <UserSwitcher staff={staff} me={me} />
         </div>

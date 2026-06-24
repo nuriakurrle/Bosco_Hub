@@ -122,9 +122,40 @@ function startTranscription(send, format) {
 // Nota: para un piloto se difunde a todos los /watch conectados. El enrutado por
 // operador (llamada → pantalla de quien la atendió) se afina más adelante.
 const watchers = new Set();
+let callActive = false; // ¿hay una llamada Twilio en curso? (para el aviso global)
 function broadcast(obj) {
   const msg = JSON.stringify(obj);
   for (const ws of watchers) if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+}
+
+// Guarda la llamada en `inquiries` al colgar (channel='phone'), reusando el
+// endpoint del dashboard. Así NINGUNA llamada se pierde, la vea alguien o no.
+const COL = {
+  schule: "school_name", kontakt: "contact_person", art: "program_type",
+  haus: "house", termin: "date_range", personen: "number_of_people",
+  stufe: "grade_level", sonder: "special_requirements",
+};
+async function saveCall(transcript, fields, sensitiveNote) {
+  const url = process.env.DASHBOARD_URL || "http://localhost:3000";
+  const payload = { channel: "phone", raw_body: transcript };
+  for (const [k, col] of Object.entries(COL)) {
+    if (fields[k]?.value) payload[col] = fields[k].value;
+  }
+  payload.contains_sensitive_data = !!sensitiveNote || !!fields.sonder?.sensitive;
+  if (sensitiveNote) payload.sensitive_data_note = sensitiveNote;
+  payload.summary =
+    [fields.art?.value, fields.schule?.value, fields.termin?.value].filter(Boolean).join(" · ") || "Telefonat";
+  try {
+    const res = await fetch(`${url}/api/live-call`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    console.log("Llamada guardada como Anfrage:", data.id || JSON.stringify(data));
+  } catch (e) {
+    console.error("guardar llamada:", e.message);
+  }
 }
 
 // ── /  : micrófono del navegador (bidireccional) ──────────────────────────────
@@ -149,8 +180,20 @@ function handleMic(browser) {
 function handleTwilio(twilio) {
   if (!KEY) { twilio.close(); return; }
   console.log("Twilio: stream conectado");
-  broadcast({ type: "reset" }); // limpia la pantalla al empezar la llamada
-  const t = startTranscription(broadcast, { type: "audio/pcmu" });
+  callActive = true;
+  broadcast({ type: "reset" });               // limpia la pantalla al empezar
+  broadcast({ type: "call", active: true });  // enciende el aviso global
+
+  // Capturamos transcript + últimos campos para guardar la llamada al colgar.
+  let lastFields = {}, sensNote = null, fullText = "";
+  const send = (obj) => {
+    broadcast(obj);
+    if (obj.type === "fields") lastFields = { ...lastFields, ...obj.fields };
+    else if (obj.type === "sensitive") sensNote = obj.note;
+    else if (obj.type === "segment") fullText += (fullText ? " " : "") + obj.seg.tokens.map((t) => t.text).join("");
+  };
+
+  const t = startTranscription(send, { type: "audio/pcmu" });
   twilio.on("message", (raw) => {
     let m;
     try { m = JSON.parse(raw.toString()); } catch { return; }
@@ -158,14 +201,22 @@ function handleTwilio(twilio) {
     else if (m.event === "start") console.log("Twilio start:", m.start?.callSid || "");
     else if (m.event === "stop") t.commit();
   });
-  twilio.on("close", async () => { await t.finish(); t.close(); broadcast({ type: "status", value: "ended" }); });
+  twilio.on("close", async () => {
+    callActive = false;
+    await t.finish(); // difunde la extracción final → se captura en lastFields
+    t.close();
+    broadcast({ type: "status", value: "ended" });
+    broadcast({ type: "call", active: false }); // apaga el aviso global
+    if (fullText.trim()) await saveCall(fullText, lastFields, sensNote); // registro automático
+  });
 }
 
 // ── /watch : un dashboard que quiere ver la llamada Twilio en curso ────────────
 function handleWatch(ws) {
-  // No mandamos status al conectar: el dashboard se queda "a la espera" (listening)
-  // hasta que entre una llamada por /twilio, que difunde reset + transcripción.
+  // Al conectar le decimos si YA hay una llamada en curso (para el aviso global y
+  // para que la consola se muestre sola); si no, se queda a la espera.
   watchers.add(ws);
+  ws.send(JSON.stringify({ type: "call", active: callActive }));
   ws.on("close", () => watchers.delete(ws));
 }
 

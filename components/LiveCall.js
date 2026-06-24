@@ -57,6 +57,7 @@ export default function LiveCall() {
   const router = useRouter();
   const esRef = useRef(null);
   const wsRef = useRef(null);
+  const watchRef = useRef(null); // WS /watch permanente (escucha llamadas Twilio)
   const audioRef = useRef(null); // { ac, stream, node }
   const scrollRef = useRef(null);
   const [status, setStatus] = useState("idle"); // idle | listening | ended
@@ -72,6 +73,22 @@ export default function LiveCall() {
 
   // Cierra todo al desmontar.
   useEffect(() => () => closeAll(), []);
+
+  // Escucha llamadas de Twilio en segundo plano: si entra una, la consola se
+  // muestra sola (sin pulsar nada). Independiente de los botones de prueba.
+  useEffect(() => {
+    let stop = false, retry;
+    function connect() {
+      if (stop) return;
+      const ws = new WebSocket(`${liveWsUrl()}/watch`);
+      watchRef.current = ws;
+      ws.onmessage = (e) => handleEvent(JSON.parse(e.data));
+      ws.onclose = () => { if (!stop) retry = setTimeout(connect, 4000); };
+      ws.onerror = () => ws.close();
+    }
+    connect();
+    return () => { stop = true; clearTimeout(retry); watchRef.current?.close(); };
+  }, []);
 
   // Auto-scroll del transcript al último segmento.
   useEffect(() => {
@@ -98,6 +115,7 @@ export default function LiveCall() {
 
   // Aplica un evento al estado (mismo formato en SSE y en WebSocket).
   function handleEvent(msg) {
+    if (msg.type === "call") { if (msg.active) setStatus("listening"); return; }
     if (msg.type === "reset") resetState();
     else if (msg.type === "status") setStatus(msg.value);
     else if (msg.type === "partial") setPartialText(msg.text);
@@ -291,9 +309,6 @@ export default function LiveCall() {
               </Btn>
               <Btn kind="secondary" size="sm" onClick={answerLive}>
                 Live (Mikrofon)
-              </Btn>
-              <Btn kind="secondary" size="sm" onClick={watchTwilio}>
-                Telefon (Twilio)
               </Btn>
               <Btn kind="sage" icon="clock" onClick={() => answer("complete")}>
                 {status === "ended" ? "Neuer Anruf" : "Anruf annehmen"}
