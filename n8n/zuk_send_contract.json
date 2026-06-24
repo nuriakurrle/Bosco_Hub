@@ -1,0 +1,71 @@
+{
+  "id": "zuksendcontract1",
+  "name": "ZUK - Send Contract",
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zuk-send-contract",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "zuk-send-contract"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "body.pdfBase64",
+        "options": {
+          "fileName": "={{ $json.body.filename }}",
+          "mimeType": "application/pdf"
+        }
+      },
+      "id": "node-tofile",
+      "name": "Base64 to PDF",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "={{ $('Webhook').item.json.body.subject }}",
+        "bodyContent": "={{ $('Webhook').item.json.body.text }}",
+        "bodyContentType": "text",
+        "toRecipients": "={{ $('Webhook').item.json.body.to }}",
+        "additionalFields": {
+          "attachments": {
+            "attachmentsBinary": [{ "property": "data" }]
+          }
+        }
+      },
+      "id": "node-send",
+      "name": "Send Email (Outlook)",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [480, 0],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "RMRz9wntFr8TCs3X",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[ { "node": "Base64 to PDF", "type": "main", "index": 0 } ]]
+    },
+    "Base64 to PDF": {
+      "main": [[ { "node": "Send Email (Outlook)", "type": "main", "index": 0 } ]]
+    }
+  }
+}

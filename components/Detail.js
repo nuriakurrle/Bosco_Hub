@@ -91,6 +91,26 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
     setTimeout(() => setToast(null), 4000);
   }
 
+  // Envía la Rückfrage (datos faltantes) por n8n. Devuelve true/false para que el
+  // panel sepa si marcar como enviado o mantener el editor abierto.
+  async function sendFollowUp(id, { to, subject, body }) {
+    try {
+      const res = await fetch(`/api/inquiries/${id}/followup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to, subject, text: body }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Senden fehlgeschlagen.");
+      }
+      return true;
+    } catch (e) {
+      showToast(e.message || "Rückfrage konnte nicht gesendet werden.");
+      return false;
+    }
+  }
+
   function verify(id) {
     setFields((fs) => fs.map((f) => (f.id === id ? { ...f, status: "verified" } : f)));
   }
@@ -353,7 +373,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                 <FollowUpPanel
                   item={item}
                   missing={missing}
-                  onSend={() => showToast("Rückfrage an den Kunden wird über n8n versendet.")}
+                  onSend={(d) => sendFollowUp(item.id, d)}
                 />
               </div>
             )}

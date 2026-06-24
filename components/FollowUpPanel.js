@@ -52,8 +52,10 @@ export default function FollowUpPanel({ item, missing = [], onSend, makeDraft })
       setTimeout(() => setCopied(false), 1500);
     } catch {}
   }
-  function send() {
-    onSend?.({ to, subject, body });
+  async function send() {
+    // El padre hace el envío real (POST a n8n) y devuelve false si falla.
+    const ok = await onSend?.({ to, subject, body });
+    if (ok === false) return; // mantener el editor abierto para reintentar
     setSent(true);
     setOpen(false);
   }

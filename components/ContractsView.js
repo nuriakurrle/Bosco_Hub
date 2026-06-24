@@ -9,6 +9,7 @@ import BookingEditModal from "@/components/BookingEditModal";
 import { useBookingEdit } from "@/lib/useBookingEdit";
 import { fmtDE } from "@/lib/datefmt";
 import { deadlineFor } from "@/lib/deadline";
+import { buildContractDraft } from "@/lib/contract";
 
 const STATUS_META = {
   draft: { label: "Entwurf nötig", tone: "warn", icon: "doc" },
@@ -47,6 +48,48 @@ export default function ContractsView({ data }) {
   const [focus, setFocus] = useState(null);
   // Buchung, deren Aktions-Menü („⋯") gerade offen ist (oder null).
   const [menuId, setMenuId] = useState(null);
+  const [toast, setToast] = useState(null);
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  }
+
+  // Envía el contrato como ADJUNTO PDF al cliente (vía n8n) y, si sale bien, marca
+  // la reserva como "versendet". El contrato es el texto editado guardado o, si no,
+  // el generado a partir de los datos.
+  async function sendContract(b) {
+    if (!b.email) {
+      showToast("Keine E-Mail-Adresse hinterlegt — bitte zuerst die Anfrage ergänzen.");
+      return;
+    }
+    if (!confirm(`Buchungsbestätigung als PDF an ${b.email} senden?`)) return;
+    const pdfText = b.contractText || buildContractDraft({
+      id: b.id, school: b.school, title: b.title, contact: b.contact,
+      program: b.program, house: b.house, dates: b.dates, people: b.people,
+      status: b.contractStatus, createdBy: b.createdBy,
+    });
+    try {
+      const res = await fetch(`/api/bookings/${b.id}/contract/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: b.email,
+          subject: `Buchungsbestätigung – ${b.title}`,
+          text: `Sehr geehrte Damen und Herren,\n\nanbei senden wir Ihnen die Buchungsbestätigung als PDF.\n\nMit freundlichen Grüßen\nZUK Benediktbeuern`,
+          pdfText,
+          filename: `Buchungsbestaetigung-${b.id}.pdf`,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "Senden fehlgeschlagen.");
+      }
+      setStatus(b.id, "sent"); // refleja el estado en la UI (el envío ya lo marcó en BD)
+      showToast("Vertrag als PDF an den Kunden gesendet.");
+    } catch (e) {
+      showToast(e.message || "Vertrag konnte nicht gesendet werden.");
+    }
+  }
 
   async function setStatus(id, status) {
     setItems((list) =>
@@ -195,8 +238,8 @@ export default function ContractsView({ data }) {
                   </div>
                   <div className="contract-actions" style={{ position: "relative" }}>
                     {b.contractStatus === "draft" && (
-                      <button className="db-btn db-btn-sage db-btn-sm" onClick={() => setStatus(b.id, "sent")}>
-                        <Icon d={I.send} size={12} /> versendet
+                      <button className="db-btn db-btn-sage db-btn-sm" onClick={() => sendContract(b)}>
+                        <Icon d={I.send} size={12} /> versenden
                       </button>
                     )}
                     {b.contractStatus === "sent" && (
@@ -246,6 +289,12 @@ export default function ContractsView({ data }) {
         onCancel={() => setEditing(null)}
         onSave={saveDetails}
       />
+
+      {toast && (
+        <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 50, background: "var(--db-primary)", color: "#fbf6e9", padding: "12px 18px", borderRadius: 10, boxShadow: "0 8px 24px -6px rgba(40,20,25,.4)", display: "flex", alignItems: "center", gap: 10, fontSize: 13, maxWidth: 460 }}>
+          <Icon d={I.check} size={16} stroke={2.2} /> {toast}
+        </div>
+      )}
     </div>
   );
 }

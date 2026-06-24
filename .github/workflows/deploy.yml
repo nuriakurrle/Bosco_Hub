@@ -112,12 +112,15 @@ jobs:
           echo "Copiando e importando workflows..."
           $DC cp n8n/zuk_email_agent_prototype_v1.json n8n:/tmp/wf1.json
           $DC cp n8n/zuk_send_email.json n8n:/tmp/wf2.json
+          $DC cp n8n/zuk_send_contract.json n8n:/tmp/wf3.json
           $DC exec -T n8n n8n import:workflow --input=/tmp/wf1.json || true
           $DC exec -T n8n n8n import:workflow --input=/tmp/wf2.json || true
+          $DC exec -T n8n n8n import:workflow --input=/tmp/wf3.json || true
           # Publica (activa) cada workflow por su ID. En esta versión de n8n
           # "--all" ya no existe: hay que hacerlo uno por uno con publish:workflow.
           $DC exec -T n8n n8n publish:workflow --id=fEejzwIFeoSDGVm6 || true
           $DC exec -T n8n n8n publish:workflow --id=zuksendmail00001 || true
+          $DC exec -T n8n n8n publish:workflow --id=zuksendcontract1 || true
           # Reinicia n8n para que cargue y active lo importado (no lo hace en caliente).
           echo "Reiniciando n8n para aplicar los cambios..."
           $DC restart n8n
@@ -125,10 +128,11 @@ jobs:
           # (activar el trigger de Outlook a veces no engancha al primer reinicio.)
           sleep 15
           ACTIVOS=$($DC exec -T n8n n8n list:workflow --active=true 2>/dev/null || true)
-          if ! echo "$ACTIVOS" | grep -q fEejzwIFeoSDGVm6 || ! echo "$ACTIVOS" | grep -q zuksendmail00001; then
+          if ! echo "$ACTIVOS" | grep -q fEejzwIFeoSDGVm6 || ! echo "$ACTIVOS" | grep -q zuksendmail00001 || ! echo "$ACTIVOS" | grep -q zuksendcontract1; then
             echo "Activación incompleta — reintentando..."
             $DC exec -T n8n n8n publish:workflow --id=fEejzwIFeoSDGVm6 || true
             $DC exec -T n8n n8n publish:workflow --id=zuksendmail00001 || true
+            $DC exec -T n8n n8n publish:workflow --id=zuksendcontract1 || true
             $DC restart n8n
             sleep 15
           fi
