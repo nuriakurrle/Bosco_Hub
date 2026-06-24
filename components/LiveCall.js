@@ -1,8 +1,9 @@
 "use client";
-// components/LiveCall.js — Consola de llamada en vivo (Fase 1, demo).
-// Escucha el SSE /api/live-call/stream (transcripción + entidades simuladas),
-// pinta el transcript con resaltado a la izquierda y la tarjeta de datos a la
-// derecha, y al confirmar crea la Anfrage (channel='phone').
+// components/LiveCall.js — Consola de llamada en vivo (visor).
+// Escucha en segundo plano las llamadas de Twilio vía el microservicio (/watch):
+// cuando entra una, la consola se llena SOLA (sin pulsar nada). Pinta el transcript
+// con resaltado a la izquierda y la tarjeta de datos a la derecha; al confirmar crea
+// la Anfrage (channel='phone'). El guardado al colgar lo hace el microservicio.
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
@@ -137,82 +138,6 @@ export default function LiveCall() {
     else if (msg.type === "error") { setToast(msg.message); setStatus("ended"); }
   }
 
-  // Demo / archivo: fuente por SSE.
-  function startStream(url) {
-    closeAll(); resetState();
-    const es = new EventSource(url);
-    esRef.current = es;
-    es.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      handleEvent(msg);
-      if (msg.type === "done") es.close();
-    };
-    es.onerror = () => { es.close(); setStatus("ended"); };
-  }
-  const answer = (scenario = "complete") =>
-    startStream(`/api/live-call/stream?scenario=${scenario}`);
-  const answerReal = () => startStream("/api/live-call/transcribe");
-
-  // En vivo: micrófono del navegador → microservicio live-call (WebSocket).
-  async function answerLive() {
-    closeAll(); resetState();
-    setStatus("listening");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const ac = new AudioContext({ sampleRate: 24000 });
-      await ac.audioWorklet.addModule("/pcm-worklet.js");
-      const src = ac.createMediaStreamSource(stream);
-      const node = new AudioWorkletNode(ac, "pcm-worklet");
-      audioRef.current = { ac, stream, node };
-
-      const ws = new WebSocket(liveWsUrl());
-      ws.binaryType = "arraybuffer";
-      wsRef.current = ws;
-      ws.onmessage = (e) => handleEvent(JSON.parse(e.data));
-      ws.onerror = () => {
-        setToast("Keine Verbindung zum live-call Dienst (läuft `npm start` in live-call/?).");
-        setStatus("ended");
-      };
-      ws.onclose = () => setStatus((s) => (s === "listening" ? "ended" : s));
-
-      // Reenvía el PCM del worklet al microservicio.
-      node.port.onmessage = (e) => { if (ws.readyState === WebSocket.OPEN) ws.send(e.data); };
-      src.connect(node);
-      node.connect(ac.destination); // mantiene el grafo activo (el worklet no emite audio)
-    } catch (err) {
-      setToast("Mikrofon nicht verfügbar: " + (err?.message || err));
-      setStatus("ended");
-    }
-  }
-
-  // Modo Twilio: escucha la transcripción de una llamada REAL (sin micrófono).
-  // Se suscribe a /watch; el microservicio difunde ahí lo que llega por /twilio.
-  function watchTwilio() {
-    closeAll(); resetState();
-    setStatus("listening");
-    const ws = new WebSocket(`${liveWsUrl()}/watch`);
-    wsRef.current = ws;
-    ws.onmessage = (e) => handleEvent(JSON.parse(e.data));
-    ws.onerror = () => { setToast("Keine Verbindung zum live-call Dienst."); setStatus("ended"); };
-  }
-
-  function hangup() {
-    const ws = wsRef.current;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      // Detener el micro (silencio) y pedir cerrar la última frase + extracción.
-      if (audioRef.current) {
-        audioRef.current.stream?.getTracks().forEach((t) => t.stop());
-        audioRef.current.ac?.close();
-        audioRef.current = null;
-      }
-      ws.send(JSON.stringify({ type: "stop" }));
-      setTimeout(() => closeAll(), 2500); // dar tiempo a la transcripción/extracción final
-    } else {
-      closeAll();
-    }
-    setStatus("ended");
-  }
-
   async function createAnfrage() {
     setSaving(true);
     // Reconstruye el transcript como texto para guardarlo en raw_body.
@@ -310,26 +235,6 @@ export default function LiveCall() {
           </span>
         )}
         {status === "ended" && <Pill tone="neutral">Anruf beendet</Pill>}
-        <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-          {status === "idle" || status === "ended" ? (
-            <>
-              <Btn kind="secondary" size="sm" onClick={() => answer("incomplete")}>
-                Beispiel: unvollständig
-              </Btn>
-              <Btn kind="secondary" size="sm" onClick={answerReal}>
-                Echte Aufnahme
-              </Btn>
-              <Btn kind="secondary" size="sm" onClick={answerLive}>
-                Live (Mikrofon)
-              </Btn>
-              <Btn kind="sage" icon="clock" onClick={() => answer("complete")}>
-                {status === "ended" ? "Neuer Anruf" : "Anruf annehmen"}
-              </Btn>
-            </>
-          ) : (
-            <Btn kind="secondary" icon="x" onClick={hangup}>Auflegen</Btn>
-          )}
-        </span>
       </div>
 
       {/* split: transcript | datos */}
@@ -352,7 +257,7 @@ export default function LiveCall() {
           {segments.length === 0 && !partialText ? (
             <div className="db-empty" style={{ padding: "40px 24px" }}>
               <Icon d={I.clock} size={22} />
-              <div>Noch kein Anruf. Klicke auf <b>„Anruf annehmen"</b>, um die Live-Transkription zu sehen.</div>
+              <div>Noch kein Anruf. Eingehende Telefonate erscheinen hier <b>automatisch</b>.</div>
             </div>
           ) : (
             <div className="transcript">
