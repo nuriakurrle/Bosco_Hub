@@ -56,12 +56,14 @@ export default function Shell({ active, staff = [], me, children }) {
         <div className="app-topbar">
           <SearchBox />
           <span style={{ flex: 1 }} />
-          <CallNotifier />
           <ThemeToggle />
           <UserSwitcher staff={staff} me={me} />
         </div>
         <div className="app-content">{children}</div>
       </div>
+
+      {/* Popup flotante de llamada en curso (position: fixed) */}
+      <CallNotifier />
     </div>
   );
 }

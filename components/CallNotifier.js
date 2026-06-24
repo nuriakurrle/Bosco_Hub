@@ -1,10 +1,11 @@
 "use client";
 // components/CallNotifier.js — Aviso global de "llamada en curso".
 // Escucha en segundo plano el microservicio (/watch) desde cualquier página y, si
-// hay una llamada de Twilio en curso, muestra un badge pulsante arriba a la derecha
-// (en la topbar del Shell) con enlace a la consola /llamada.
+// hay una llamada de Twilio en curso, muestra un POPUP flotante abajo a la derecha
+// (visible en toda la app) con enlace a la consola /llamada.
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 // Misma regla que LiveCall: ws://localhost en dev, wss://live.<dominio> en prod.
 function liveWsUrl() {
@@ -16,6 +17,7 @@ function liveWsUrl() {
 
 export default function CallNotifier() {
   const [active, setActive] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     let stop = false;
@@ -38,11 +40,16 @@ export default function CallNotifier() {
     return () => { stop = true; clearTimeout(retry); ws?.close(); };
   }, []);
 
-  if (!active) return null;
+  // No mostrar el popup si ya estás en la consola (ahí ya ves la llamada).
+  if (!active || pathname === "/llamada") return null;
   return (
-    <Link href="/llamada" className="call-badge" title="Telefonat läuft — zur Konsole">
-      <span className="call-dot" />
-      Anruf läuft
-    </Link>
+    <div className="call-popup" role="status" aria-live="polite">
+      <span className="call-popup-dot" />
+      <div className="call-popup-text">
+        <strong>Anruf läuft</strong>
+        <span>Live-Transkription bereit</span>
+      </div>
+      <Link href="/llamada" className="call-popup-btn">Zur Konsole</Link>
+    </div>
   );
 }
