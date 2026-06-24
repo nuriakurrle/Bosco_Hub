@@ -68,6 +68,7 @@ export default function LiveCall() {
   const [suggestion, setSuggestion] = useState(null);
   const [showSensitive, setShowSensitive] = useState(false);
   const [hot, setHot] = useState(null); // tipo de entidad resaltada al pasar el ratón
+  const [pinned, setPinned] = useState(null); // tipo fijado al hacer clic en una marca
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -98,7 +99,7 @@ export default function LiveCall() {
   // Limpia transcript/campos antes de empezar una nueva fuente.
   function resetState() {
     setSegments([]); setPartialText(""); setFields({}); setSensitiveNote(null);
-    setSuggestion(null); setShowSensitive(false);
+    setSuggestion(null); setShowSensitive(false); setPinned(null);
   }
 
   // Cierra todas las conexiones/recursos abiertos (SSE, WebSocket, micrófono).
@@ -267,19 +268,30 @@ export default function LiveCall() {
       ? seg.tokens
       : tokenize(seg.tokens.map((t) => t.text).join(""), marks);
 
+  // Marca resaltada activa: la del ratón (hover) o, si no, la fijada con clic.
+  const activeMark = hot || pinned;
+
   const renderTokens = (toks) =>
     toks.map((tk, j) => {
       if (!tk.mark) return <span key={j}>{tk.text}</span>;
       const sensitive = tk.mark.type === "sensitive";
       const blur = sensitive && !showSensitive;
-      const cls = ["tr-mark", `tr-mark--${tk.mark.type}`, tk.mark.low && "lowconf", hot === tk.mark.type && "hot", blur && "is-blur"]
+      const cls = ["tr-mark", `tr-mark--${tk.mark.type}`, tk.mark.low && "lowconf", activeMark === tk.mark.type && "hot", blur && "is-blur"]
         .filter(Boolean).join(" ");
+      // Al picar la marca: si es sensible, revelar; y en todo caso fijar su tipo
+      // para que se ilumine su label en la tarjeta de la derecha (clic de nuevo lo quita).
+      const onClick = () => {
+        if (sensitive) setShowSensitive(true);
+        setPinned((p) => (p === tk.mark.type ? null : tk.mark.type));
+      };
+      const fieldLabel = FIELDS.find((f) => f.mark === tk.mark.type)?.label;
       return (
         <mark
           key={j}
           className={cls}
-          title={sensitive ? "Sensible Daten — zum Anzeigen klicken" : undefined}
-          onClick={() => sensitive && setShowSensitive(true)}
+          style={{ cursor: "pointer" }}
+          title={sensitive ? "Sensible Daten — zum Anzeigen klicken" : fieldLabel ? `${fieldLabel} — klicken zum Hervorheben` : undefined}
+          onClick={onClick}
         >
           {tk.text}
         </mark>
@@ -380,10 +392,11 @@ export default function LiveCall() {
               return (
                 <div
                   key={f.key}
-                  className="ex-field"
+                  className={`ex-field ${f.mark && activeMark === f.mark ? "is-hot" : ""}`}
                   style={{ gridTemplateColumns: "18px 130px 1fr auto" }}
                   onMouseEnter={() => f.mark && setHot(f.mark)}
                   onMouseLeave={() => setHot(null)}
+                  onClick={() => f.mark && setPinned((p) => (p === f.mark ? null : f.mark))}
                 >
                   <span className={`ex-state ${has ? (data.low ? "review" : "verified") : "missing"}`}>
                     <Icon d={has ? (data.low ? I.clock : I.check) : I.x} size={11} stroke={2.2} />
