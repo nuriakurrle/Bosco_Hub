@@ -325,6 +325,18 @@ export default function LiveCall() {
         {/* TRANSCRIPT */}
         <section ref={scrollRef} className="db-scroll" style={{ flex: "1 1 56%", minWidth: 0, padding: 22, borderRight: "1px solid var(--db-line)" }}>
           <div className="db-card-title" style={{ marginBottom: 10 }}>Transkript</div>
+          {/* Leyenda de colores: qué tipo de dato resalta cada color (igual que en e-mails) */}
+          {(segments.length > 0 || partialText) && (
+            <div className="tr-legend">
+              <span className="tr-key"><i className="tr-sw tr-mark--school" /> Schule</span>
+              <span className="tr-key"><i className="tr-sw tr-mark--contact" /> Kontakt</span>
+              <span className="tr-key"><i className="tr-sw tr-mark--date" /> Zeitraum</span>
+              <span className="tr-key"><i className="tr-sw tr-mark--people" /> Personen</span>
+              <span className="tr-key"><i className="tr-sw tr-mark--grade" /> Jahrgang</span>
+              <span className="tr-key"><i className="tr-sw tr-mark--program" /> Programm</span>
+              <span className="tr-key"><i className="tr-sw tr-mark--sensitive" /> Sensibel</span>
+            </div>
+          )}
           {segments.length === 0 && !partialText ? (
             <div className="db-empty" style={{ padding: "40px 24px" }}>
               <Icon d={I.clock} size={22} />

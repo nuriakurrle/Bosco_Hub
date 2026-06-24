@@ -1727,6 +1727,11 @@ a { color: inherit; text-decoration: none; }
 .tr-mark--sensitive { background: var(--db-error-tint);    border-bottom-color: var(--db-error); }
 .tr-mark.hot        { box-shadow: 0 0 0 2px rgba(107,30,45,.28); }
 
+/* Leyenda de colores del transcript (equivalente a .hl-legend de los e-mails) */
+.tr-legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; }
+.tr-key { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--db-text-muted); }
+.tr-sw { width: 14px; height: 10px; border-radius: 2px; display: inline-block; border-bottom: 2px solid; }
+
 /* Datos sensibles: difuminados hasta que el operador hace clic (DSGVO) */
 .is-blur { filter: blur(4.5px); cursor: pointer; transition: filter .15s; }
 .is-blur:hover { filter: blur(2.5px); }
