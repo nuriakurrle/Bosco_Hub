@@ -76,6 +76,12 @@ porqué) y DSGVO (menos datos sensibles a un modelo externo).
 
 Todo lo demás es lógica determinista en `lib/`.
 
+> **Fuente única de la extracción de llamada.** El prompt + esquema de extracción
+> de campos de una llamada viven en UN solo sitio: `live-call/extract.js`. El
+> microservicio lo usa directo y el dashboard lo re-exporta desde `lib/transcribe.js`.
+> (El agente de e-mail en n8n usa otro esquema —varias reservas, columnas de BD— a
+> propósito, porque su canal y su salida son distintos.)
+
 ---
 
 ## 4. Mapa de los 11 agentes → implementación real

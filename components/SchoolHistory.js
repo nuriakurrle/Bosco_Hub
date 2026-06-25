@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { Icon, I } from "@/components/icons";
 import { Pill } from "@/components/ui";
+import SchoolSummary from "@/components/SchoolSummary";
 
 const ST = {
   reserved: { label: "reserviert", tone: "info" },
@@ -11,7 +12,7 @@ const ST = {
   cancelled: { label: "storniert", tone: "neutral" },
 };
 
-export default function SchoolHistory({ history }) {
+export default function SchoolHistory({ history, schoolName }) {
   if (!history) return null;
   return (
     <div className="school-history">
@@ -39,6 +40,7 @@ export default function SchoolHistory({ history }) {
           })}
         </div>
       )}
+      {schoolName && <SchoolSummary schoolName={schoolName} />}
       <div className="sh-hint db-muted">Bekannte Angaben lassen sich übernehmen, statt erneut zu fragen.</div>
     </div>
   );

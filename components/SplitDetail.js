@@ -51,6 +51,38 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
     setTimeout(() => setToast(null), 4000);
   }
 
+  // Contexto compacto para la IA + petición de borrador. `it` = Anfrage primaria.
+  function emailContext(it, miss) {
+    const get = (k) => it.fields?.find((f) => f.key === k)?.value || "";
+    return {
+      contact: it.from && it.from !== "Unbekannt" ? it.from : "",
+      school: it.school,
+      program: get("program_type"),
+      house: get("house"),
+      dates: get("date_range"),
+      people: get("number_of_people"),
+      grade: get("grade_level"),
+      missing: (miss || []).map((m) => m.label),
+    };
+  }
+  async function aiDraftEmail(it, type, miss) {
+    try {
+      const res = await fetch(`/api/inquiries/${it.id}/draft-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, context: emailContext(it, miss) }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "KI-Entwurf fehlgeschlagen.");
+      }
+      return await res.json();
+    } catch (e) {
+      showToast(e.message || "KI-Entwurf fehlgeschlagen.");
+      return null;
+    }
+  }
+
   // Envía la Rückfrage (datos faltantes) por n8n. Devuelve true/false para que el
   // panel sepa si marcar como enviado o mantener el editor abierto.
   async function sendFollowUp(id, { to, subject, body }) {
@@ -232,8 +264,13 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
               missing={allMissing}
               makeDraft={() => buildSplitFollowUp(itemsLive, missingByItem)}
               onSend={(d) => sendFollowUp(primary.id, d)}
+              onAiDraft={() => aiDraftEmail(primary, "followup", allMissing)}
             />
-            <ConfirmationPanel item={primary} makeDraft={() => buildSplitConfirmation(itemsLive)} />
+            <ConfirmationPanel
+              item={primary}
+              makeDraft={() => buildSplitConfirmation(itemsLive)}
+              onAiDraft={() => aiDraftEmail(primary, "confirmation", allMissing)}
+            />
           </div>
         </section>
 

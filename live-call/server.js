@@ -14,7 +14,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
-import { extractFields } from "./extract.js";
+import { extractFields, FIELD_KEYS } from "./extract.js";
 
 const PORT = process.env.LIVE_CALL_PORT || 8787;
 const OAI_URL = "wss://api.openai.com/v1/realtime?intent=transcription";
@@ -33,7 +33,6 @@ function loadKey() {
 }
 const KEY = loadKey();
 
-const FIELD_KEYS = ["schule", "kontakt", "art", "haus", "termin", "personen", "stufe", "sonder"];
 
 function sendFields(send, ex) {
   const f = ex.fields || {};

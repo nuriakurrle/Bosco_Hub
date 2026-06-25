@@ -113,9 +113,13 @@ jobs:
           $DC cp n8n/zuk_email_agent_prototype_v1.json n8n:/tmp/wf1.json
           $DC cp n8n/zuk_send_email.json n8n:/tmp/wf2.json
           $DC cp n8n/zuk_send_contract.json n8n:/tmp/wf3.json
+          $DC cp n8n/zuk_email_agent_v2.json n8n:/tmp/wf4.json
           $DC exec -T n8n n8n import:workflow --input=/tmp/wf1.json || true
           $DC exec -T n8n n8n import:workflow --input=/tmp/wf2.json || true
           $DC exec -T n8n n8n import:workflow --input=/tmp/wf3.json || true
+          # v2 (agente tool-calling): se IMPORTA pero NO se activa (publish) — es de
+          # prueba. Se promueve manualmente cuando esté validado.
+          $DC exec -T n8n n8n import:workflow --input=/tmp/wf4.json || true
           # Publica (activa) cada workflow por su ID. En esta versión de n8n
           # "--all" ya no existe: hay que hacerlo uno por uno con publish:workflow.
           $DC exec -T n8n n8n publish:workflow --id=fEejzwIFeoSDGVm6 || true

@@ -25,7 +25,7 @@ const inputStyle = {
   background: "#fff",
 };
 
-export default function ConfirmationPanel({ item, makeDraft }) {
+export default function ConfirmationPanel({ item, makeDraft, onAiDraft }) {
   const [open, setOpen] = useState(false);
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
@@ -33,6 +33,22 @@ export default function ConfirmationPanel({ item, makeDraft }) {
   const [sent, setSent] = useState(Boolean(item.confirmationSentAt));
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Pide a la IA un borrador y reemplaza Betreff/Nachricht (editable después).
+  async function aiDraft() {
+    if (!onAiDraft) return;
+    setAiLoading(true);
+    try {
+      const d = await onAiDraft();
+      if (d) {
+        if (d.subject) setSubject(d.subject);
+        if (d.body) setBody(d.body);
+      }
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   // Entwurf beim Öffnen frisch erzeugen (übernimmt zwischenzeitliche Änderungen).
   function openComposer() {
@@ -119,6 +135,11 @@ export default function ConfirmationPanel({ item, makeDraft }) {
             <Btn kind="primary" size="sm" icon="send" disabled={sending || !to} onClick={send}>
               {sending ? "Senden…" : "Bestätigung senden"}
             </Btn>
+            {onAiDraft && (
+              <Btn kind="sage" size="sm" icon="spark" disabled={aiLoading} onClick={aiDraft}>
+                {aiLoading ? "KI schreibt…" : "✨ mit KI verfassen"}
+              </Btn>
+            )}
             <Btn kind="ghost" size="sm" onClick={() => setOpen(false)}>
               Abbrechen
             </Btn>

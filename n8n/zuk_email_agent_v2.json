@@ -1,0 +1,109 @@
+{
+  "id": "zukemailagentv2",
+  "name": "ZUK - Email Intake Agent v2 (tool-calling, TEST)",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "node-manual",
+      "name": "Manual Trigger (Test)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "from", "type": "string", "value": "frau.berger@gym-sankt-anna.de" },
+            { "id": "a2", "name": "subject", "type": "string", "value": "Anfrage Orientierungstage Mai" },
+            { "id": "a3", "name": "body", "type": "string", "value": "Guten Tag, hier Frau Berger vom Gymnasium Sankt Anna. Wir moechten Orientierungstage vom 12. bis 14. Mai mit 25 Schuelern und 2 Lehrern, achte Klasse. Ein Kind ist Vegetarier. Viele Gruesse" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-sample",
+      "name": "Sample Email",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Du bist der Intake-Agent des Buchungsteams im Kloster Benediktbeuern (Don Bosco). Aus einer eingehenden E-Mail extrahierst du ALLE Buchungsanfragen (eine E-Mail kann mehrere enthalten). Nur klar buchungsfremde Mails (Newsletter, OneDrive-Benachrichtigungen, Abwesenheitsnotizen, Spam) -> request_count 0.\n\nNutze deine WERKZEUGE, bevor du antwortest:\n1) 'Customer Lookup' mit dem Schulnamen, um zu pruefen, ob die Schule bereits bekannt ist (Stammkunde). Setze is_returning_customer entsprechend.\n2) 'Duplicate Check' mit dem Schulnamen, um zu pruefen, ob bereits eine passende Anfrage existiert. Wenn ja, setze possible_duplicate_id auf die gefundene id.\n\nFelder je Anfrage: school_name, contact_person, program_type, house, date_range, number_of_people, grade_level, special_requirements. Routing: Schullandheim -> Jugendherberge; Orientierungs-/Besinnungstage -> Aktionszentrum. missing_fields: fehlende Pflichtfelder (date_range, number_of_people, program_type, school_name). status: 'needs_info' wenn Pflichtfelder fehlen, sonst 'ready_for_review'.\n\nE-MAIL\nVon: {{ $json.from }}\nBetreff: {{ $json.subject }}\nText: {{ $json.body }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "id": "node-agent",
+      "name": "Intake Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [460, 0]
+    },
+    {
+      "parameters": {
+        "model": { "__rl": true, "mode": "list", "value": "gpt-4o", "cachedResultName": "gpt-4o" },
+        "options": {}
+      },
+      "id": "node-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [320, 220],
+      "credentials": {
+        "openAiApi": { "id": "KNbs9IV7QsyP8Jem", "name": "OpenAI account" }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"request_count\": 1,\n  \"requests\": [\n    {\n      \"school_name\": \"Gymnasium Sankt Anna\",\n      \"contact_person\": \"Frau Berger\",\n      \"program_type\": \"Orientierungstage\",\n      \"house\": \"Aktionszentrum\",\n      \"date_range\": \"12.05.2027 - 14.05.2027\",\n      \"number_of_people\": \"25 + 2 Lehrer\",\n      \"grade_level\": \"8\",\n      \"special_requirements\": \"1 Vegetarier\",\n      \"missing_fields\": \"\",\n      \"status\": \"ready_for_review\",\n      \"is_returning_customer\": false,\n      \"possible_duplicate_id\": null\n    }\n  ]\n}"
+      },
+      "id": "node-parser",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [600, 220]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT count(*)::int AS prior_inquiries, max(received_at) AS last_seen FROM inquiries WHERE school_name ILIKE '%' || {{ $fromAI('school_name', 'Name der Schule oder Gruppe') }} || '%'",
+        "options": {}
+      },
+      "id": "node-tool-lookup",
+      "name": "Customer Lookup",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [780, 220],
+      "credentials": {
+        "postgres": { "id": "bjtHqY4LrBLXQHrN", "name": "Postgres account" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, school_name, date_range, received_at FROM inquiries WHERE school_name ILIKE '%' || {{ $fromAI('school_name', 'Name der Schule oder Gruppe') }} || '%' ORDER BY received_at DESC LIMIT 5",
+        "options": {}
+      },
+      "id": "node-tool-dup",
+      "name": "Duplicate Check",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [960, 220],
+      "credentials": {
+        "postgres": { "id": "bjtHqY4LrBLXQHrN", "name": "Postgres account" }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger (Test)": { "main": [[ { "node": "Sample Email", "type": "main", "index": 0 } ]] },
+    "Sample Email": { "main": [[ { "node": "Intake Agent", "type": "main", "index": 0 } ]] },
+    "OpenAI Chat Model": { "ai_languageModel": [[ { "node": "Intake Agent", "type": "ai_languageModel", "index": 0 } ]] },
+    "Structured Output Parser": { "ai_outputParser": [[ { "node": "Intake Agent", "type": "ai_outputParser", "index": 0 } ]] },
+    "Customer Lookup": { "ai_tool": [[ { "node": "Intake Agent", "type": "ai_tool", "index": 0 } ]] },
+    "Duplicate Check": { "ai_tool": [[ { "node": "Intake Agent", "type": "ai_tool", "index": 0 } ]] }
+  }
+}

@@ -68,6 +68,7 @@ services:
       - ./n8n/zuk_email_agent_prototype_v1.json:/workflows/email-agent.json:ro
       - ./n8n/zuk_send_email.json:/workflows/send-email.json:ro
       - ./n8n/zuk_send_contract.json:/workflows/send-contract.json:ro
+      - ./n8n/zuk_email_agent_v2.json:/workflows/email-agent-v2.json:ro
 
   dashboard:
     # Se construye desde el Dockerfile de este repo.

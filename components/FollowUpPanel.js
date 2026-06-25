@@ -26,13 +26,29 @@ const inputStyle = {
   background: "#fff",
 };
 
-export default function FollowUpPanel({ item, missing = [], onSend, makeDraft }) {
+export default function FollowUpPanel({ item, missing = [], onSend, makeDraft, onAiDraft }) {
   const [open, setOpen] = useState(false);
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [copied, setCopied] = useState(false);
   const [sent, setSent] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Pide a la IA un borrador y reemplaza Betreff/Nachricht (la persona lo edita luego).
+  async function aiDraft() {
+    if (!onAiDraft) return;
+    setAiLoading(true);
+    try {
+      const d = await onAiDraft();
+      if (d) {
+        if (d.subject) setSubject(d.subject);
+        if (d.body) setBody(d.body);
+      }
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   // Ohne fehlende Pflicht-Angaben gibt es nichts nachzufragen.
   if (missing.length === 0) return null;
@@ -108,6 +124,11 @@ export default function FollowUpPanel({ item, missing = [], onSend, makeDraft })
             <Btn kind="primary" size="sm" icon="send" disabled={!to} onClick={send}>
               Rückfrage senden
             </Btn>
+            {onAiDraft && (
+              <Btn kind="sage" size="sm" icon="spark" disabled={aiLoading} onClick={aiDraft}>
+                {aiLoading ? "KI schreibt…" : "✨ mit KI verfassen"}
+              </Btn>
+            )}
             <Btn kind="ghost" size="sm" onClick={copyDraft}>
               {copied ? "kopiert ✓" : "kopieren"}
             </Btn>

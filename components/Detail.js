@@ -91,6 +91,40 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
     setTimeout(() => setToast(null), 4000);
   }
 
+  // Contexto compacto de la Anfrage para la IA (campos extraídos + faltantes).
+  function emailContext() {
+    const get = (k) => item.fields?.find((f) => f.key === k)?.value || "";
+    return {
+      contact: item.from && item.from !== "Unbekannt" ? item.from : "",
+      school: item.school,
+      program: get("program_type"),
+      house: get("house"),
+      dates: get("date_range"),
+      people: get("number_of_people"),
+      grade: get("grade_level"),
+      missing: missing.map((m) => m.label),
+    };
+  }
+
+  // Pide a la IA un borrador de e-mail. Devuelve {subject, body} o null (con toast).
+  async function aiDraftEmail(type) {
+    try {
+      const res = await fetch(`/api/inquiries/${item.id}/draft-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, context: emailContext() }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "KI-Entwurf fehlgeschlagen.");
+      }
+      return await res.json();
+    } catch (e) {
+      showToast(e.message || "KI-Entwurf fehlgeschlagen.");
+      return null;
+    }
+  }
+
   // Envía la Rückfrage (datos faltantes) por n8n. Devuelve true/false para que el
   // panel sepa si marcar como enviado o mantener el editor abierto.
   async function sendFollowUp(id, { to, subject, body }) {
@@ -311,7 +345,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
             {/* Kontext zur Anfrage — bewusst unter den Daten, damit die Felder zuerst kommen */}
             {history && (
               <div style={{ marginTop: 14 }}>
-                <SchoolHistory history={history} />
+                <SchoolHistory history={history} schoolName={item.school} />
               </div>
             )}
             {duplicate && (
@@ -374,11 +408,12 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                   item={item}
                   missing={missing}
                   onSend={(d) => sendFollowUp(item.id, d)}
+                  onAiDraft={() => aiDraftEmail("followup")}
                 />
               </div>
             )}
             <div style={{ marginTop: 12 }}>
-              <ConfirmationPanel item={item} />
+              <ConfirmationPanel item={item} onAiDraft={() => aiDraftEmail("confirmation")} />
             </div>
 
             {/* Abschnitt 4: Freigabe (primärer Schritt vor dem Anlegen) */}
