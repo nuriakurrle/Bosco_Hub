@@ -20,7 +20,7 @@ const inputStyle = {
   fontSize: 14,
   border: "1px solid var(--db-line-strong)",
   borderRadius: 6,
-  padding: "8px 10px",
+  padding: "8px",
   color: "var(--db-text)",
   background: "#fff",
 };
@@ -96,7 +96,7 @@ export default function ConfirmationPanel({ item, makeDraft, onAiDraft }) {
     <div className="followup" style={{ marginTop: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <Icon d={I.mail} size={14} style={{ color: "var(--db-secondary)" }} />
-        <b style={{ fontSize: 12.5 }}>Kundenbestätigung</b>
+        <b style={{ fontSize: 13 }}>Kundenbestätigung</b>
         {!open && (
           <span style={{ marginLeft: "auto" }}>
             <Btn kind="sage" size="sm" icon="mail" onClick={openComposer}>
@@ -123,7 +123,7 @@ export default function ConfirmationPanel({ item, makeDraft, onAiDraft }) {
           <label style={labelStyle}>
             Nachricht
             <textarea
-              style={{ ...inputStyle, minHeight: 230, fontSize: 14.5, fontFamily: "var(--db-font-serif)", lineHeight: 1.6 }}
+              style={{ ...inputStyle, minHeight: 230, fontSize: 14, fontFamily: "var(--db-font-serif)", lineHeight: 1.6 }}
               value={body}
               onChange={(e) => setBody(e.target.value)}
             />

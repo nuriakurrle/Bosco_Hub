@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
-import { Pill, StatCard, EmptyState } from "@/components/ui";
+import { Pill, EmptyState, HouseTag } from "@/components/ui";
 import AssignControl from "@/components/AssignControl";
 import { areaColor, areaLabel, suggestedPerson } from "@/lib/team";
 
@@ -26,13 +26,16 @@ function groupItems(items) {
   return groups;
 }
 
-export default function Inbox({ items: initialItems, staff = [], me, query = "", initialFilter = "all" }) {
+export default function Inbox({ items: initialItems, staff = [], houses = [], me, query = "", initialFilter = "all" }) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [filter, setFilter] = useState(initialFilter);
   const [toast, setToast] = useState(null);
   const [selIdx, setSelIdx] = useState(-1);
-  const q = (query || "").trim().toLowerCase();
+  // Live-Suche direkt über der Liste. Initial aus ?q= (teilbare Deep-Links),
+  // danach rein clientseitig — kein Routing-Roundtrip pro Tastendruck.
+  const [search, setSearch] = useState(query || "");
+  const q = search.trim().toLowerCase();
 
   // Server-Daten nachziehen (Auto-Refresh / nach Navigation).
   useEffect(() => setItems(initialItems), [initialItems]);
@@ -121,6 +124,7 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
   // ── Filter ──────────────────────────────────────────────────────────────
   let rows = groups.filter(matchesQuery);
   if (filter === "open") rows = rows.filter((g) => !isDone(g));
+  else if (filter === "booking") rows = rows.filter((g) => g.primary.emailType === "booking");
   else if (filter === "email") rows = rows.filter((g) => g.primary.channel === "email");
   else if (filter === "phone") rows = rows.filter((g) => g.primary.channel === "phone");
   else if (filter === "unassigned") rows = rows.filter((g) => !g.primary.assignedTo);
@@ -147,12 +151,17 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
   const nEmail = groups.filter((g) => g.primary.channel === "email").length;
   const nPhone = groups.filter((g) => g.primary.channel === "phone").length;
   const nUnassigned = groups.filter((g) => !g.primary.assignedTo).length;
-  const nMine = groups.filter((g) => g.primary.assignedTo === me).length;
+  const nBooking = groups.filter((g) => g.primary.emailType === "booking").length;
   const nUrgent = groups.filter((g) => urgencyOf(g) === "urgent").length;
 
   const teamLoad = staff.map((s) => ({ ...s, n: open.filter((g) => g.primary.assignedTo === s.key).length }));
   const loadByKey = Object.fromEntries(teamLoad.map((t) => [t.key, t.n]));
   const areaCounts = {};
+  // Alle Häuser/Bereiche zeigen — auch ohne offene Anfragen (z. B. Zeltplatz).
+  houses.forEach((h) => {
+    const l = areaLabel(h.name);
+    if (l && l !== "—") areaCounts[l] = 0;
+  });
   open.forEach((g) => {
     const l = areaOf(g);
     if (l && l !== "—") areaCounts[l] = (areaCounts[l] || 0) + 1;
@@ -164,10 +173,10 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
 
   // KPI-Karten = primäre Status-Filter (klicken filtert, erneut klicken = alle).
   const KPI_CARDS = [
-    { k: "open", tone: "info", icon: "inbox", label: "Offen", val: open.length },
+    { k: "all", tone: "info", icon: "mail", label: "Alle E-Mails", val: groups.length },
     { k: "urgent", tone: "error", icon: "alert", label: "Dringend", val: nUrgent },
     { k: "unassigned", tone: "warn", icon: "flag", label: "Nicht zugewiesen", val: nUnassigned },
-    { k: "mine", tone: "primary", icon: "users", label: "Mir zugewiesen", val: nMine },
+    { k: "booking", tone: "success", icon: "bed", label: "Buchungen", val: nBooking },
   ];
 
   // Eine Anfrage-Karte (wiederverwendet in flacher Liste und Gruppen).
@@ -194,9 +203,10 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
               color: i.channel === "phone" ? "var(--db-primary)" : "var(--db-info)",
             }}
           >
-            <Icon d={i.channel === "phone" ? I.clock : I.mail} size={20} />
+            <Icon d={i.channel === "phone" ? I.phone : I.mail} size={18} />
+            <span className="ch-rail-label">{i.channel === "phone" ? "Telefon" : "E-Mail"}</span>
           </div>
-          <div style={{ flex: 1, minWidth: 0, padding: "14px 18px" }}>
+          <div style={{ flex: 1, minWidth: 0, padding: "16px" }}>
             {/* Name zuerst (Kanal zeigt das Icon in der Leiste links) */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontWeight: 700, fontSize: 16, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -216,12 +226,12 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
             </div>
             <div
               className="db-muted"
-              style={{ fontSize: 13.5, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+              style={{ fontSize: 14, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
             >
               {i.from} — {i.summary}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
-              <span className="db-faint" style={{ fontSize: 11.5 }}>{i.received}</span>
+              <span className="db-faint" style={{ fontSize: 12 }}>{i.received}</span>
               {!done && i.waitingDays >= 2 && (
                 <Pill tone={i.waitingDays >= 4 ? "error" : "warn"} dot={false}>
                   <Icon d={I.clock} size={10} /> seit {i.waitingDays} Tagen offen
@@ -235,17 +245,14 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
               flexShrink: 0,
               width: 196,
               borderLeft: "1px solid var(--db-line)",
-              padding: "10px 12px",
+              padding: "8px 12px",
               display: "flex",
               flexDirection: "column",
-              gap: 6,
+              gap: 8,
               justifyContent: "center",
             }}
           >
-            <span className="route-chip" title={area}>
-              <span className="route-area-dot" style={{ background: areaColor(area) }} />
-              <span className="rc-house">{areaLabel(area)}</span>
-            </span>
+            <HouseTag area={area} />
             <AssignControl id={i.id} who={i.assignedTo} suggest={suggest} onAssign={onAssign} staff={staff} me={me} loadByKey={loadByKey} />
           </div>
           <div style={{ display: "flex", alignItems: "center", padding: "0 12px", color: "var(--db-text-faint)" }}>
@@ -256,13 +263,6 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
     );
   }
 
-  // Gruppierung nach Dringlichkeit (Überblick "alle"/"offen", ohne Suche).
-  const grouped = (filter === "all" || filter === "open") && !q;
-  const SECTIONS = [
-    ["Dringend", (g) => urgencyOf(g) === "urgent"],
-    ["Diese Woche", (g) => urgencyOf(g) === "warn" || urgencyOf(g) === "normal"],
-    ["Erledigt", (g) => urgencyOf(g) === "done"],
-  ];
 
   return (
     <div
@@ -274,70 +274,82 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
         background: "var(--db-bg)",
       }}
     >
-      <div style={{ padding: "26px 40px 18px", maxWidth: 1480, width: "100%", margin: "0 auto" }}>
-        <div className="db-kicker" style={{ color: "var(--db-primary)" }}>
-          Schritt 1 — Anfragen sammeln &amp; zuteilen
-        </div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginTop: 2 }}>
-          <h1 className="db-h1" style={{ fontSize: 22 }}>Team-Posteingang</h1>
-          <span className="db-faint" style={{ fontSize: 12 }}>Ziel: Antwort in 2 Werktagen</span>
-        </div>
-        <p className="db-muted" style={{ fontSize: 13, margin: "4px 0 0", maxWidth: "70ch" }}>
-          E-Mail und Telefon laufen hier zusammen; dringende und nicht zugewiesene Anfragen stehen oben.
-        </p>
-
-        {/* KPI-Karten = Status-Filter (klicken filtert, erneut klicken = alle) */}
-        <div className="dash-stats" style={{ marginTop: 16 }}>
-          {KPI_CARDS.map((c) => (
-            <StatCard
-              key={c.k}
-              tone={c.tone}
-              icon={c.icon}
-              label={c.label}
-              value={c.val}
-              active={filter === c.k}
-              onClick={() => setFilter(filter === c.k ? "all" : c.k)}
-            />
-          ))}
-        </div>
-
-        {q && (
-          <div className="search-active">
-            <Icon d={I.search} size={12} />
-            <span>Suche: <b>{query}</b> · {rows.length} Treffer</span>
-            <button onClick={() => router.push("/posteingang")} title="Suche löschen">
-              <Icon d={I.x} size={12} />
-            </button>
+      <div className="db-scroll" style={{ flex: 1, minHeight: 0 }}>
+        {/* Intro — volle Breite (linke Kante wie die Suchleiste oben) */}
+        <div style={{ padding: "var(--page-pad-top) var(--page-pad-x) var(--s-2)" }}>
+          <div className="db-kicker" style={{ color: "var(--db-primary)" }}>
+            Schritt 1 — Anfragen sammeln &amp; zuteilen
           </div>
-        )}
-
-        {/* Sekundär: Kanal-Filter + Reset (andere Dimension als die Status-Karten) */}
-        <div className="filter-chips" style={{ marginTop: 12, alignItems: "center" }}>
-          <span className="db-faint" style={{ fontSize: 12, marginRight: 2 }}>Kanal:</span>
-          <button className={`filter-chip ${filter === "email" ? "active" : ""}`} onClick={() => setFilter(filter === "email" ? "all" : "email")}>
-            <Icon d={I.mail} size={12} /> E-Mail <span className="fc-count">{nEmail}</span>
-          </button>
-          <button className={`filter-chip ${filter === "phone" ? "active" : ""}`} onClick={() => setFilter(filter === "phone" ? "all" : "phone")}>
-            <Icon d={I.clock} size={12} /> Telefon <span className="fc-count">{nPhone}</span>
-          </button>
-          {filter !== "all" && (
-            <button className="db-link" style={{ marginLeft: "auto", fontSize: 12 }} onClick={() => setFilter("all")}>
-              Alle anzeigen
-            </button>
-          )}
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginTop: 2 }}>
+            <h1 className="db-h1" style={{ fontSize: 22 }}>Team-Posteingang</h1>
+            <span className="db-faint" style={{ fontSize: 12 }}>Ziel: Antwort in 2 Werktagen</span>
+          </div>
+          <p className="db-muted" style={{ fontSize: 13, margin: "4px 0 0", maxWidth: "70ch" }}>
+            E-Mail und Telefon laufen hier zusammen; dringende und nicht zugewiesene Anfragen stehen oben.
+          </p>
         </div>
-      </div>
 
-      <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "0 40px 32px" }}>
-        <div className="inbox-grid" style={{ maxWidth: 1480, margin: "0 auto" }}>
+        {/* Schlanke, klebende Filter-Leiste — bleibt beim Scrollen oben */}
+        <div className="inbox-toolbar">
+          <div className="inbox-toolbar-row">
+            {KPI_CARDS.map((c) => (
+              <button
+                key={c.k}
+                className={`filter-chip ${filter === c.k ? "active" : ""}`}
+                onClick={() => setFilter(filter === c.k ? "all" : c.k)}
+                title={c.label}
+              >
+                <Icon d={I[c.icon]} size={12} /> {c.label} <span className="fc-count">{c.val}</span>
+              </button>
+            ))}
+            <span className="inbox-toolbar-sep" />
+            <button className={`filter-chip ${filter === "email" ? "active" : ""}`} onClick={() => setFilter(filter === "email" ? "all" : "email")}>
+              <Icon d={I.mail} size={12} /> E-Mail <span className="fc-count">{nEmail}</span>
+            </button>
+            <button className={`filter-chip ${filter === "phone" ? "active" : ""}`} onClick={() => setFilter(filter === "phone" ? "all" : "phone")}>
+              <Icon d={I.clock} size={12} /> Telefon <span className="fc-count">{nPhone}</span>
+            </button>
+            {filter !== "all" && (
+              <button className="db-link" style={{ marginLeft: "auto", fontSize: 12 }} onClick={() => setFilter("all")}>
+                Alle anzeigen
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Inhalt — volle Breite, linke Kante = Suchleiste/Kopf/Leiste (32px). */}
+        <div style={{ padding: "var(--s-2) var(--page-pad-x) var(--page-pad-bottom)" }}>
+        <div className="inbox-grid">
           <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+          {/* Suchleiste — unter der Filter-Leiste, direkt über den Anfragen */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <form className="db-search inbox-search" onSubmit={(e) => e.preventDefault()} role="search">
+              <Icon d={I.search} size={14} />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Schule, Kontakt, Anfrage suchen…"
+                aria-label="Anfragen durchsuchen"
+              />
+              {search && (
+                <button type="button" className="ts-clear" onClick={() => setSearch("")} aria-label="Suche löschen">
+                  <Icon d={I.x} size={12} />
+                </button>
+              )}
+            </form>
+            {search && (
+              <span className="db-faint" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                {rows.length} Treffer
+              </span>
+            )}
+          </div>
           {rows.length === 0 ? (
             q ? (
               <EmptyState
                 icon="search"
                 title="Keine Treffer"
-                hint={`Für „${query}" wurde nichts gefunden. Suche anpassen oder zurücksetzen.`}
-                action={<button className="db-btn db-btn-secondary db-btn-sm" onClick={() => router.push("/posteingang")}>Suche zurücksetzen</button>}
+                hint={`Für „${search}" wurde nichts gefunden. Suche anpassen oder zurücksetzen.`}
+                action={<button className="db-btn db-btn-secondary db-btn-sm" onClick={() => setSearch("")}>Suche zurücksetzen</button>}
               />
             ) : filter !== "all" ? (
               <EmptyState
@@ -353,23 +365,9 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
                 hint="Neue Anfragen aus E-Mail (über n8n) und Telefon erscheinen hier automatisch."
               />
             )
-          ) : grouped ? (
-            SECTIONS.map(([title, pred]) => {
-              const arr = rows.filter(pred);
-              if (!arr.length) return null;
-              return (
-                <div key={title} className="inbox-section">
-                  <div className="inbox-section-head">
-                    <span>{title}</span>
-                    <span className="fc-count">{arr.length}</span>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {arr.map(renderCard)}
-                  </div>
-                </div>
-              );
-            })
           ) : (
+            // Einheitliche Ordnung: EINE konsistent sortierte Liste in jedem Filter
+            // (Dringlichkeit, dann älteste zuerst) — keine wechselnde Abschnitts-Gruppierung.
             rows.map(renderCard)
           )}
           </div>
@@ -411,7 +409,7 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
             <div className="aside-card">
               <div className="aside-title"><Icon d={I.house} size={13} /> Nach Bereich</div>
               <div className="aside-chips">
-                {Object.entries(areaCounts).length === 0 && <span className="db-faint" style={{ fontSize: 11.5 }}>—</span>}
+                {Object.entries(areaCounts).length === 0 && <span className="db-faint" style={{ fontSize: 12 }}>—</span>}
                 {Object.entries(areaCounts).map(([label, n]) => (
                   <button
                     key={label}
@@ -427,20 +425,24 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
 
             <div className="aside-card">
               <div className="aside-title"><Icon d={I.clock} size={13} /> Am längsten offen</div>
-              {oldestList.length === 0 && <div className="db-muted" style={{ fontSize: 11.5, padding: "4px 2px" }}>Alles aktuell ✓</div>}
+              {oldestList.length === 0 && <div className="db-muted" style={{ fontSize: 12, padding: "4px 2px" }}>Alles aktuell ✓</div>}
               {oldestList.map((g) => (
                 <button
                   key={g.key}
                   className="aside-row"
                   onClick={() => router.push(`/inquiry/${g.primary.id}`)}
                 >
-                  <span className={`urgency-dot ${urgencyOf(g)}`} />
+                  <span
+                    className={`urgency-dot ${urgencyOf(g)}`}
+                    title={urgencyOf(g) === "urgent" ? "dringend" : urgencyOf(g) === "warn" ? "wird älter" : "offen"}
+                  />
                   <span className="aside-name">{g.primary.school}</span>
                   <span className="mono aside-n">{g.primary.waitingDays}d</span>
                 </button>
               ))}
             </div>
           </aside>
+        </div>
         </div>
       </div>
 
@@ -454,7 +456,7 @@ export default function Inbox({ items: initialItems, staff = [], me, query = "",
             zIndex: 50,
             background: "var(--db-error)",
             color: "#fff",
-            padding: "12px 18px",
+            padding: "12px 16px",
             borderRadius: 10,
             fontSize: 13,
           }}

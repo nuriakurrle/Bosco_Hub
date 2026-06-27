@@ -18,8 +18,8 @@ export default function SchoolHistory({ history, schoolName }) {
     <div className="school-history">
       <div className="sh-head">
         <Icon d={I.users} size={14} />
-        <b style={{ fontSize: 12.5 }}>Stammkunde</b>
-        <span className="db-muted" style={{ fontSize: 11.5 }}>
+        <b style={{ fontSize: 13 }}>Stammkunde</b>
+        <span className="db-muted" style={{ fontSize: 12 }}>
           {history.bookingsCount > 0
             ? `${history.bookingsCount} frühere Buchung${history.bookingsCount > 1 ? "en" : ""}`
             : `${history.priorInquiries} frühere Anfrage${history.priorInquiries > 1 ? "n" : ""}`}

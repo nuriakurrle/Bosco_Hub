@@ -2,11 +2,11 @@
 // components/Detail.js — Single inquiry view: source on the left (email/call),
 // the data the AI extracted on the right — to review, edit (saved to Postgres)
 // and create the booking.
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
-import { Pill, Btn, Card, ChannelPill } from "@/components/ui";
-import AssignControl from "@/components/AssignControl";
+import { Pill, Btn, Card, ChannelPill, HouseTag } from "@/components/ui";
+import DetailHeader from "@/components/DetailHeader";
 import ConfirmationPanel from "@/components/ConfirmationPanel";
 import FollowUpPanel from "@/components/FollowUpPanel";
 import { AvailabilityCard, SafetyGate } from "@/components/Availability";
@@ -14,7 +14,37 @@ import { Stepper, VerifyGate, DuplicateBanner, MissingSummary, nowTime } from "@
 import EmailSource from "@/components/EmailSource";
 import SchoolHistory from "@/components/SchoolHistory";
 import NotesPanel from "@/components/NotesPanel";
-import { suggestedPerson } from "@/lib/team";
+
+// Eine Eckdaten-Chip (Wert vorhanden = normal, sonst rot „… fehlt").
+function Fact({ icon, value, missingLabel }) {
+  return (
+    <span className={`fact${value ? "" : " missing"}`}>
+      <span className="fact-ico"><Icon d={I[icon]} size={13} /></span>
+      {value || missingLabel}
+    </span>
+  );
+}
+
+// Kleiner Vollständigkeits-Ring (verifizierte Felder / Gesamt).
+function CompletenessRing({ value, total }) {
+  const pct = total ? value / total : 0;
+  const r = 16;
+  const c = 2 * Math.PI * r;
+  return (
+    <svg className="ring" width="42" height="42" viewBox="0 0 42 42" aria-hidden="true">
+      <circle className="ring-track" cx="21" cy="21" r={r} fill="none" strokeWidth="4" />
+      <circle
+        className="ring-fill"
+        cx="21" cy="21" r={r} fill="none" strokeWidth="4" strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={c * (1 - pct)}
+      />
+      <text x="21" y="21" transform="rotate(90 21 21)" textAnchor="middle" dominantBaseline="central"
+        style={{ fontSize: 11, fontWeight: 700, fill: "var(--db-text)", fontFamily: "var(--db-font-mono)" }}>
+        {Math.round(pct * 100)}
+      </text>
+    </svg>
+  );
+}
 
 export default function Detail({ item, staff = [], me, assessment, duplicate, history, notes = [], related = [] }) {
   const router = useRouter();
@@ -49,6 +79,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
   const [assignedTo, setAssignedTo] = useState(item.assignedTo);
   const [editing, setEditing] = useState(null);
   const [created, setCreated] = useState(alreadyBooked);
+  const [createdBookingId, setCreatedBookingId] = useState(null);
   const [toast, setToast] = useState(null);
   const [mergeCandidate, setMergeCandidate] = useState(null);
   const [merging, setMerging] = useState(false);
@@ -56,6 +87,8 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
   const [verifyChecked, setVerifyChecked] = useState(alreadyBooked);
   const [verifiedAt, setVerifiedAt] = useState(null);
   const [missingConfirmed, setMissingConfirmed] = useState(false);
+  // Welche Kunden-E-Mail gerade gezeigt wird (null = automatisch nach Vollständigkeit).
+  const [mailTab, setMailTab] = useState(null);
 
   // Locked = already booked: the detail becomes read-only.
   const locked = created;
@@ -63,6 +96,24 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
   const review = fields.filter((f) => f.status === "review");
   const verified = fields.filter((f) => f.status === "verified");
   const missing = fields.filter((f) => f.status === "missing");
+
+  // Eckdaten für den Vorgangs-Kopf.
+  const fieldVal = (k) => fields.find((f) => f.key === k)?.value || "";
+  const facts = {
+    house: fieldVal("house") || item.house || "",
+    dates: fieldVal("date_range"),
+    people: fieldVal("number_of_people"),
+    program: fieldVal("program_type"),
+  };
+  // „Fehlendes zuerst": nach Status sortieren (fehlt → prüfen → bestätigt).
+  const STATUS_RANK = { missing: 0, review: 1, verified: 2 };
+  const sortedFields = [...fields].sort((a, b) => (STATUS_RANK[a.status] ?? 3) - (STATUS_RANK[b.status] ?? 3));
+  const firstVerifiedIdx = sortedFields.findIndex((f) => f.status === "verified");
+  const hasAttention = sortedFields.some((f) => f.status !== "verified");
+  const complete = missing.length === 0;
+  // Empfohlene Mail je nach Stand; per Toggle umschaltbar.
+  const recommendedMail = locked || complete ? "confirm" : "followup";
+  const effectiveMail = mailTab || recommendedMail;
 
   // Klartextname für die Audit-Zeile.
   const verifierName = staff.find((s) => s.key === me)?.name || me || "—";
@@ -182,15 +233,17 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
   }
 
   async function createBooking() {
-    setCreated(true);
     try {
-      await fetch(`/api/inquiries/${item.id}/booking`, {
+      const res = await fetch(`/api/inquiries/${item.id}/booking`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ created_by: me }),
       });
+      if (!res.ok) throw new Error("create failed");
+      const data = await res.json().catch(() => ({}));
+      setCreatedBookingId(data.bookingId || null);
+      setCreated(true); // erst nach Erfolg → kein falscher "angelegt"-Status bei Fehler
       showToast("Buchung angelegt — Status: Anfrage. Sie können Details später ergänzen.");
-      setTimeout(() => router.push("/posteingang"), 1200);
     } catch {
       showToast("Konnte die Buchung nicht speichern.");
     }
@@ -199,50 +252,46 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
   return (
     <div className="detail-view" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
       {/* sub-header */}
-      <div style={{ padding: "12px 22px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 14 }}>
-        <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push("/posteingang")}>
-          <Icon d={I.chevron} size={13} style={{ transform: "rotate(180deg)" }} /> Posteingang
-        </button>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span className={`db-pill ${item.channel === "phone" ? "db-pill-burgundy" : "db-pill-info"}`}>
-              <Icon d={item.channel === "phone" ? I.clock : I.mail} size={11} />
-              {item.channel === "phone" ? "Telefon" : "E-Mail"}
-            </span>
+      <DetailHeader
+        title={item.school}
+        assignId={item.id}
+        assignedTo={assignedTo}
+        responsibleArea={item.responsibleArea}
+        onAssign={onAssign}
+        staff={staff}
+        me={me}
+        extra={created && <Pill tone="success">Buchung angelegt</Pill>}
+        badges={
+          <>
+            <ChannelPill channel={item.channel} />
             <span className="db-faint" style={{ fontSize: 11 }}>
               empfangen {item.receivedAbs}
             </span>
-          </div>
-          <h1 className="serif" style={{ margin: "3px 0 0", fontSize: 21, fontWeight: 500, color: "var(--db-primary-ink)" }}>
-            {item.school}
-          </h1>
-        </div>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11.5, color: "var(--db-text-muted)" }}>
-            Zuständig:
-            <AssignControl
-              id={item.id}
-              who={assignedTo}
-              suggest={suggestedPerson(item.responsibleArea, staff)}
-              onAssign={onAssign}
-              compact
-              staff={staff}
-              me={me}
-            />
-          </span>
-          {created && <Pill tone="success">Buchung angelegt</Pill>}
-        </span>
-      </div>
+          </>
+        }
+      />
 
       {/* Prozess-Schritte */}
-      <div style={{ padding: "8px 22px", borderBottom: "1px solid var(--db-line)", background: "var(--db-paper-2)" }}>
+      <div style={{ padding: "var(--s-1) var(--bar-pad-x)", borderBottom: "1px solid var(--db-line)", background: "var(--db-paper-2)" }}>
         <Stepper current={currentStep} />
+      </div>
+
+      {/* Eckdaten-Kopf — Vorgang auf einen Blick (Haus · Zeitraum · Personen · Programm) */}
+      <div className="detail-facts">
+        {facts.house ? (
+          <HouseTag area={facts.house} label={facts.house} />
+        ) : (
+          <span className="fact missing"><span className="fact-ico"><Icon d={I.house} size={13} /></span> Haus fehlt</span>
+        )}
+        <Fact icon="calendar" value={facts.dates} missingLabel="Zeitraum fehlt" />
+        <Fact icon="users" value={facts.people ? `${facts.people} Pers.` : ""} missingLabel="Personen fehlt" />
+        <Fact icon="flag" value={facts.program} missingLabel="Programm fehlt" />
       </div>
 
       {/* split */}
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
         {/* SOURCE */}
-        <section className="db-scroll" style={{ flex: "1 1 52%", minWidth: 0, padding: 22, borderRight: "1px solid var(--db-line)" }}>
+        <section className="db-scroll" style={{ flex: "1 1 52%", minWidth: 0, padding: "var(--pane-pad)", borderRight: "1px solid var(--db-line)" }}>
           <Card title={item.channel === "phone" ? "Telefonat" : "E-Mail"} kicker={item.receivedAbs}>
             <EmailSource
               item={item}
@@ -259,11 +308,14 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
 
         {/* EXTRACTED */}
         <section style={{ flex: "1 1 48%", minWidth: 0, display: "flex", flexDirection: "column", background: "var(--db-paper)" }}>
-          <div style={{ padding: "16px 18px 10px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 8 }}>
-            <div>
-              <div className="db-card-title">Automatisch erkannte Daten</div>
-              <div className="db-muted" style={{ fontSize: 11.5, marginTop: 2 }}>
-                {verified.length}/{fields.length} bestätigt · {missing.length} fehlen
+          <div style={{ padding: "var(--bar-pad-y) var(--bar-pad-x) var(--s-1)", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="ring-wrap">
+              <CompletenessRing value={verified.length} total={fields.length} />
+              <div>
+                <div className="db-card-title">Automatisch erkannte Daten</div>
+                <div className="db-muted" style={{ fontSize: 12, marginTop: 2 }}>
+                  {verified.length}/{fields.length} bestätigt{missing.length ? ` · ${missing.length} fehlen` : ""}
+                </div>
               </div>
             </div>
             {!locked && review.length > 0 && (
@@ -273,12 +325,15 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
             )}
           </div>
 
-          <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "14px 18px 18px" }}>
+          <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "var(--s-2) var(--bar-pad-x) var(--bar-pad-x)" }}>
             {/* Abschnitt 1: Daten prüfen */}
             <div className="det-section-head"><Icon d={I.doc} size={12} /> Daten prüfen</div>
-            {fields.map((f) => (
+            {sortedFields.map((f, idx) => (
+              <Fragment key={f.id}>
+              {hasAttention && firstVerifiedIdx > 0 && idx === firstVerifiedIdx && (
+                <div className="ex-divider" title="bestätigt" />
+              )}
               <div
-                key={f.id}
                 className={`ex-field ${activeKey === f.key ? "active" : ""}`}
                 style={{ gridTemplateColumns: "18px 130px 1fr auto" }}
                 onMouseEnter={() => setActiveKey(f.key)}
@@ -330,6 +385,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                   )}
                 </span>
               </div>
+              </Fragment>
             ))}
 
             {!locked && (
@@ -360,7 +416,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
               <div className="related-banner" style={{ marginTop: 10 }}>
                 <div className="rel-head">
                   <Icon d={I.link} size={14} />
-                  <b style={{ fontSize: 12.5 }}>Verwandte Anfragen derselben Schule</b>
+                  <b style={{ fontSize: 13 }}>Verwandte Anfragen derselben Schule</b>
                 </div>
                 {related.map((r) => (
                   <div key={r.id} className="rel-row">
@@ -398,23 +454,48 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
             )}
 
             {/* Abschnitt 3: E-Mails an den Kunden (human-in-the-loop) */}
-            <div className="det-section-head" style={{ marginTop: 18 }}><Icon d={I.mail} size={12} /> E-Mails an den Kunden</div>
-            <div className="db-faint" style={{ fontSize: 11.5, margin: "-2px 0 8px" }}>
-              Rückfrage = wenn noch Infos fehlen · Bestätigung = wenn alles vollständig ist.
-            </div>
+            <div className="det-section-head" style={{ marginTop: 18 }}><Icon d={I.mail} size={12} /> E-Mail an den Kunden</div>
+            {/* Toggle: standardmäßig die empfohlene Mail, aber beide erreichbar.
+                Nach der Buchung (locked) nur noch die Bestätigung. */}
             {!locked && (
-              <div>
-                <FollowUpPanel
-                  item={item}
-                  missing={missing}
-                  onSend={(d) => sendFollowUp(item.id, d)}
-                  onAiDraft={() => aiDraftEmail("followup")}
-                />
+              <div className="mail-toggle" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={effectiveMail === "followup"}
+                  className={effectiveMail === "followup" ? "active" : ""}
+                  onClick={() => setMailTab("followup")}
+                >
+                  <Icon d={I.mail} size={11} /> Rückfrage
+                  {recommendedMail === "followup" && <span className="mt-dot" title="empfohlen" />}
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={effectiveMail === "confirm"}
+                  className={effectiveMail === "confirm" ? "active" : ""}
+                  onClick={() => setMailTab("confirm")}
+                >
+                  <Icon d={I.check} size={11} /> Bestätigung
+                  {recommendedMail === "confirm" && <span className="mt-dot" title="empfohlen" />}
+                </button>
               </div>
             )}
-            <div style={{ marginTop: 12 }}>
-              <ConfirmationPanel item={item} onAiDraft={() => aiDraftEmail("confirmation")} />
+            <div className="db-faint" style={{ fontSize: 12, margin: "6px 0 8px" }}>
+              {effectiveMail === "confirm"
+                ? complete
+                  ? "Alle Pflichtangaben vollständig — Buchungsbestätigung kann raus."
+                  : "Hinweis: Es fehlen noch Pflichtangaben — Bestätigung erst nach Klärung sinnvoll."
+                : `Noch ${missing.length || 0} Info${missing.length !== 1 ? "s" : ""} offen — Rückfrage an den Kunden.`}
             </div>
+            {effectiveMail === "confirm" ? (
+              <ConfirmationPanel item={item} onAiDraft={() => aiDraftEmail("confirmation")} />
+            ) : (
+              <FollowUpPanel
+                item={item}
+                missing={missing}
+                onSend={(d) => sendFollowUp(item.id, d)}
+                onAiDraft={() => aiDraftEmail("followup")}
+              />
+            )}
 
             {/* Abschnitt 4: Freigabe (primärer Schritt vor dem Anlegen) */}
             <div className="det-section-head primary" style={{ marginTop: 18 }}><Icon d={I.check} size={12} /> Freigabe</div>
@@ -427,7 +508,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                 locked={locked || !missingResolved}
               />
               {!missingResolved && (
-                <div className="db-muted" style={{ fontSize: 11.5, marginTop: 6 }}>
+                <div className="db-muted" style={{ fontSize: 12, marginTop: 6 }}>
                   Erst die fehlenden Pflicht-Angaben oben klären oder „trotzdem fortfahren" bestätigen.
                 </div>
               )}
@@ -446,23 +527,38 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                 {missing.length ? ` · ${missing.length} fehlt` : ""}
               </Pill>
             )}
-            <span className="db-muted" style={{ fontSize: 11.5 }}>
+            <span className="db-muted" style={{ fontSize: 12 }}>
               {created
                 ? "Erscheint im Hausmanager."
                 : canCreate
                 ? "Freigegeben — jetzt anlegen."
                 : "Felder prüfen und unten freigeben."}
             </span>
-            <span style={{ marginLeft: "auto" }}>
-              <Btn
-                kind="primary"
-                iconR="arrowRight"
-                disabled={!canCreate}
-                style={!canCreate ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
-                onClick={() => canCreate && createBooking()}
-              >
-                {created ? "Angelegt" : "Buchung anlegen"}
-              </Btn>
+            <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+              {created ? (
+                <>
+                  <Btn kind="secondary" onClick={() => router.push("/posteingang")}>
+                    Zum Posteingang
+                  </Btn>
+                  <Btn
+                    kind="primary"
+                    iconR="arrowRight"
+                    onClick={() => router.push(createdBookingId ? `/buchungen#booking-${createdBookingId}` : "/buchungen")}
+                  >
+                    Zur Buchung
+                  </Btn>
+                </>
+              ) : (
+                <Btn
+                  kind="primary"
+                  iconR="arrowRight"
+                  disabled={!canCreate}
+                  style={!canCreate ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+                  onClick={() => canCreate && createBooking()}
+                >
+                  Buchung anlegen
+                </Btn>
+              )}
             </span>
           </div>
         </section>
@@ -480,7 +576,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
             </div>
 
             <div style={{ padding: 16, overflowY: "auto" }}>
-              <p className="db-muted" style={{ fontSize: 12.5, marginTop: 0, marginBottom: 14 }}>
+              <p className="db-muted" style={{ fontSize: 13, marginTop: 0, marginBottom: 14 }}>
                 Gehören diese beiden Anfragen wirklich zum selben Vorgang? Bitte vergleichen und
                 bestätigen. Nach dem Zusammenführen erscheinen sie als <b>ein</b> gemeinsamer Fall.
               </p>
@@ -515,7 +611,7 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
                   >
                     <div
                       className="db-faint"
-                      style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}
+                      style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}
                     >
                       {s.label}
                     </div>
@@ -559,12 +655,12 @@ export default function Detail({ item, staff = [], me, assessment, duplicate, hi
             zIndex: 50,
             background: "var(--db-primary)",
             color: "#fbf6e9",
-            padding: "12px 18px",
+            padding: "12px 16px",
             borderRadius: 10,
             boxShadow: "0 8px 24px -6px rgba(40,20,25,.4)",
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: 8,
             fontSize: 13,
             maxWidth: 460,
           }}

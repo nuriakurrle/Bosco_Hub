@@ -149,7 +149,7 @@ export function SafetyGate({ assessment, contactName, onAsk, onEstimate }) {
         </span>
       </div>
 
-      <div className="avail-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="avail-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {/* Geschlechter-Aufteilung → Zimmerzuteilung */}
         <div className={`gate-item ${s.gender.known ? "ok" : "warn"}`}>
           <span className="gate-ico"><Icon d={s.gender.known ? I.check : I.alert} size={14} /></span>
@@ -165,7 +165,7 @@ export function SafetyGate({ assessment, contactName, onAsk, onEstimate }) {
             (genderOk ? (
               <Pill tone="warn" dot={false}>geschätzt</Pill>
             ) : (
-              <span style={{ display: "flex", gap: 6 }}>
+              <span style={{ display: "flex", gap: 8 }}>
                 <Btn kind="sage" size="sm" icon="send" onClick={() => onAsk?.("gender")}>
                   Bei {contactName || "Kontakt"} nachfragen
                 </Btn>

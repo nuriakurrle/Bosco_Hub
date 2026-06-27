@@ -74,7 +74,7 @@ export default function UserSwitcher({ staff = [], me }) {
                   padding: "6px 8px",
                   cursor: "pointer",
                   color: "var(--db-text)",
-                  fontSize: 12.5,
+                  fontSize: 13,
                 }}
               >
                 <span className="assignee-av" style={{ background: "#d9b89a" }}>
@@ -83,7 +83,7 @@ export default function UserSwitcher({ staff = [], me }) {
                 <span style={{ lineHeight: 1.25 }}>
                   {s.name}
                   <br />
-                  <span style={{ fontSize: 10.5, color: "var(--db-text-faint)" }}>{s.area}</span>
+                  <span style={{ fontSize: 11, color: "var(--db-text-faint)" }}>{s.area}</span>
                 </span>
               </button>
             ))}

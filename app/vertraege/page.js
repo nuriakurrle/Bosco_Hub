@@ -6,7 +6,10 @@ import { getStaff, getCurrentUser } from "@/lib/staff";
 
 export const dynamic = "force-dynamic";
 
-export default async function VertraegePage() {
+export default async function VertraegePage({ searchParams }) {
+  const sp = await searchParams;
+  // Vorfilter aus der Buchungen-Seite (Cross-Link „Entwurf nötig").
+  const initialFocus = typeof sp?.focus === "string" ? sp.focus : null;
   let data = { groups: [], kpis: {} };
   let staff = [];
   let me = null;
@@ -27,7 +30,7 @@ export default async function VertraegePage() {
           <code>cd n8n && docker compose up -d</code>
         </div>
       ) : (
-        <ContractsView data={data} />
+        <ContractsView data={data} initialFocus={initialFocus} />
       )}
     </Shell>
   );

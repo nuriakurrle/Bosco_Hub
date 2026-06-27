@@ -43,7 +43,7 @@ export default function BookingEditModal({ editing, houses = [], onField, onCanc
           </label>
         </div>
         <div className="modal-foot">
-          <span className="db-faint" style={{ fontSize: 11.5, marginRight: "auto" }}>
+          <span className="db-faint" style={{ fontSize: 12, marginRight: "auto" }}>
             Anreise/Abreise haben Vorrang vor dem Freitext.
           </span>
           <button className="db-btn db-btn-ghost db-btn-sm" onClick={onCancel}>abbrechen</button>

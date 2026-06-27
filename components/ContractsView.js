@@ -3,7 +3,7 @@
 // (Entwurf nötig / Versendet / Bestätigt) mit Frist-Ampel und Status-Aktionen.
 import { useState } from "react";
 import { Icon, I } from "@/components/icons";
-import { Pill, StatCard } from "@/components/ui";
+import { StatCard, ContractBadge, CountBadge, HouseTag } from "@/components/ui";
 import ContractButton from "@/components/ContractDraft";
 import BookingEditModal from "@/components/BookingEditModal";
 import { useBookingEdit } from "@/lib/useBookingEdit";
@@ -16,6 +16,8 @@ const STATUS_META = {
   sent: { label: "Versendet", tone: "info", icon: "send" },
   signed: { label: "Bestätigt", tone: "success", icon: "check" },
 };
+// Icon für den Fristen-Lead-Block, wenn keine Tageszahl angezeigt wird.
+const DEADLINE_ICON = { error: "alert", info: "send", success: "check", neutral: "clock", warn: "clock" };
 
 // Anzeige-Felder aus den (ggf. bearbeiteten) Rohwerten ableiten.
 function deriveDisplay(it, houses) {
@@ -35,7 +37,9 @@ function deriveDisplay(it, houses) {
   };
 }
 
-export default function ContractsView({ data }) {
+const FOCUS_KEYS = ["draft", "sent", "signed", "overdue"];
+
+export default function ContractsView({ data, initialFocus = null }) {
   const houses = data.houses || [];
   // flache, editierbare Liste; Gruppen werden daraus abgeleitet
   const { items, setItems, editing, setEditing, setField, saveDetails, saveText } = useBookingEdit(
@@ -45,7 +49,8 @@ export default function ContractsView({ data }) {
   // Sortierung: nach Aufenthaltsdatum (auf-/absteigend) oder Dringlichkeit (Default)
   const [sort, setSort] = useState("urgency");
   // Aktiver KPI-Filter (klickbare Karte): null | draft | sent | signed | overdue.
-  const [focus, setFocus] = useState(null);
+  // Vorbelegung aus dem Cross-Link der Buchungen-Seite (?focus=draft).
+  const [focus, setFocus] = useState(FOCUS_KEYS.includes(initialFocus) ? initialFocus : null);
   // Buchung, deren Aktions-Menü („⋯") gerade offen ist (oder null).
   const [menuId, setMenuId] = useState(null);
   const [toast, setToast] = useState(null);
@@ -98,12 +103,8 @@ export default function ContractsView({ data }) {
           ? {
               ...it,
               contractStatus: status,
-              deadline:
-                status === "sent"
-                  ? { tone: "info", label: "versendet" }
-                  : status === "signed"
-                  ? { tone: "success", label: "bestätigt" }
-                  : it.origDeadline,
+              // Frist neu aus der EINEN Quelle ableiten (inkl. short/days fürs Lead).
+              deadline: deadlineFor(it.startDate, status),
             }
           : it
       )
@@ -160,7 +161,9 @@ export default function ContractsView({ data }) {
       <div className="dash-inner">
         <div className="db-kicker" style={{ color: "var(--db-primary)" }}>Schritt 3 — Verträge &amp; Fristen</div>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <h1 className="db-h1" style={{ fontSize: 22, marginTop: 2 }}>Verträge</h1>
+          <h1 className="db-h1" style={{ fontSize: 22, marginTop: 2, display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon d={I.doc} size={20} /> Verträge &amp; Fristen
+          </h1>
           <div className="filter-chips" style={{ alignItems: "center" }}>
             <span className="db-faint" style={{ fontSize: 12, marginRight: 2 }}>Sortieren:</span>
             {[
@@ -209,42 +212,46 @@ export default function ContractsView({ data }) {
         {groups.map((g) => (
           <div key={g.key} className="contracts-group">
             <div className="contracts-group-head">
-              <Pill tone={g.meta.tone} dot={false}><Icon d={I[g.meta.icon]} size={11} /> {g.meta.label}</Pill>
-              <span className="db-faint" style={{ fontSize: 12 }}>· {g.list.length}</span>
+              <ContractBadge status={g.key} />
+              <CountBadge>{g.list.length}</CountBadge>
             </div>
             {g.list.length === 0 && <div className="db-muted" style={{ fontSize: 12, padding: "2px 4px 8px" }}>—</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {g.list.map((b) => (
                 <div key={b.id} className="contract-row">
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontWeight: 700, fontSize: 16 }}>{b.title}</span>
-                      {/* Frist-Ampel nur im Entwurf — in Versendet/Bestätigt wiederholt sie nur den Gruppennamen */}
-                      {b.contractStatus === "draft" && (
-                        <Pill tone={b.deadline.tone === "neutral" ? "neutral" : b.deadline.tone} dot={b.deadline.tone === "error"}>
-                          {b.deadline.tone === "error" && <Icon d={I.alert} size={10} />} {b.deadline.label}
-                        </Pill>
-                      )}
-                    </div>
-                    <div className="db-muted" style={{ fontSize: 13.5, marginTop: 3 }}>
-                      {b.house} · {b.program || "Aufenthalt"}{b.contact ? ` · ${b.contact}` : ""}
-                    </div>
+                  {/* Fristen-Lead — führt die Karte (deadline-zentriert) */}
+                  <div className={`ct-deadline t-${b.deadline.tone}`} title={b.deadline.label}>
+                    {b.deadline.days != null ? (
+                      <>
+                        <span className="ct-deadline-num">{b.deadline.days}</span>
+                        <span className="ct-deadline-unit">Tage</span>
+                        <span className="ct-deadline-label">{b.deadline.short}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Icon d={I[DEADLINE_ICON[b.deadline.tone] || "clock"]} size={20} />
+                        <span className="ct-deadline-label">{b.deadline.short}</span>
+                      </>
+                    )}
                   </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div className="mono" style={{ fontSize: 13.5, fontWeight: 600 }}>{b.dates}</div>
-                    <div className="db-faint" style={{ fontSize: 12 }}>
-                      <Icon d={I.users} size={12} style={{ verticalAlign: -1 }} /> {b.people}{b.people !== "—" ? " Pers." : ""}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>{b.title}</div>
+                    <div className="db-muted" style={{ fontSize: 13, marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <HouseTag area={b.house} label={b.house} />
+                      <span>
+                        {b.program || "Aufenthalt"} · {b.dates} · {b.people}{b.people !== "—" ? " Pers." : ""}{b.contact ? ` · ${b.contact}` : ""}
+                      </span>
                     </div>
                   </div>
                   <div className="contract-actions" style={{ position: "relative" }}>
                     {b.contractStatus === "draft" && (
-                      <button className="db-btn db-btn-sage db-btn-sm" onClick={() => sendContract(b)}>
-                        <Icon d={I.send} size={12} /> versenden
+                      <button className="db-btn db-btn-primary" onClick={() => sendContract(b)}>
+                        <Icon d={I.send} size={14} /> versenden
                       </button>
                     )}
                     {b.contractStatus === "sent" && (
-                      <button className="db-btn db-btn-primary db-btn-sm" onClick={() => setStatus(b.id, "signed")}>
-                        <Icon d={I.check} size={12} /> bestätigt
+                      <button className="db-btn db-btn-primary" onClick={() => setStatus(b.id, "signed")}>
+                        <Icon d={I.check} size={14} /> bestätigt
                       </button>
                     )}
                     <button
@@ -291,7 +298,7 @@ export default function ContractsView({ data }) {
       />
 
       {toast && (
-        <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 50, background: "var(--db-primary)", color: "#fbf6e9", padding: "12px 18px", borderRadius: 10, boxShadow: "0 8px 24px -6px rgba(40,20,25,.4)", display: "flex", alignItems: "center", gap: 10, fontSize: 13, maxWidth: 460 }}>
+        <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 50, background: "var(--db-primary)", color: "#fbf6e9", padding: "12px 16px", borderRadius: 10, boxShadow: "0 8px 24px -6px rgba(40,20,25,.4)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, maxWidth: 460 }}>
           <Icon d={I.check} size={16} stroke={2.2} /> {toast}
         </div>
       )}

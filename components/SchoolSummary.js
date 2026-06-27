@@ -27,7 +27,7 @@ export default function SchoolSummary({ schoolName }) {
 
   if (summary) {
     return (
-      <div style={{ marginTop: 8, display: "flex", gap: 7, fontSize: 12.5, lineHeight: 1.5, color: "var(--db-text)" }}>
+      <div style={{ marginTop: 8, display: "flex", gap: 8, fontSize: 13, lineHeight: 1.5, color: "var(--db-text)" }}>
         <Icon d={I.spark} size={14} style={{ color: "var(--db-secondary)", flex: "none", marginTop: 1 }} />
         <span>{summary}</span>
       </div>
@@ -40,7 +40,7 @@ export default function SchoolSummary({ schoolName }) {
         {loading ? "KI fasst zusammen…" : "✨ KI-Zusammenfassung"}
       </Btn>
       {error && (
-        <span style={{ color: "var(--db-error)", fontSize: 11.5, marginLeft: 8 }}>{error}</span>
+        <span style={{ color: "var(--db-error)", fontSize: 12, marginLeft: 8 }}>{error}</span>
       )}
     </div>
   );

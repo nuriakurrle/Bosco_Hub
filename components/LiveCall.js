@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
-import { Pill, Btn } from "@/components/ui";
+import { Pill, Btn, EmptyState } from "@/components/ui";
 
 // Orden y etiquetas de la tarjeta de datos (mismas que el flujo de e-mail).
 // `col` es la columna de la base de datos; `mark` enlaza el campo con su color
@@ -34,19 +34,36 @@ function liveWsUrl() {
   return `wss://live.${window.location.host}`;
 }
 
-// Parte un texto en tokens, resaltando las citas (quotes) de las entidades.
+// Construye un regex tolerante a partir de un término (cita o valor):
+// insensible a mayúsculas y flexible con los espacios/saltos, para que una cita
+// que no coincide carácter a carácter con el transcript igualmente se resalte.
+function buildMarkRegex(term) {
+  const t = String(term || "").trim();
+  if (t.length < 2) return null; // evita falsos positivos con 1 carácter
+  const esc = t
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // escapa regex
+    .replace(/\s+/g, "\\s+");               // tolera espacios/saltos de línea
+  try { return new RegExp(esc, "i"); } catch { return null; }
+}
+
+// Parte un texto en tokens, resaltando las entidades detectadas. Cada `mark`
+// trae su regex ya compilado (m.re). El primer match por token gana; los tokens
+// ya marcados no se vuelven a partir (evita solapes).
 function tokenize(text, marks) {
   let tokens = [{ text }];
   for (const m of marks) {
-    if (!m.quote) continue;
+    if (!m.re) continue;
     const next = [];
     for (const tk of tokens) {
-      const idx = tk.mark ? -1 : tk.text.indexOf(m.quote);
-      if (idx < 0) { next.push(tk); continue; }
+      if (tk.mark) { next.push(tk); continue; }
+      const hit = tk.text.match(m.re);
+      if (!hit) { next.push(tk); continue; }
+      const idx = hit.index;
+      const matched = hit[0]; // conserva el texto original (mayúsculas/espacios)
       const before = tk.text.slice(0, idx);
-      const after = tk.text.slice(idx + m.quote.length);
+      const after = tk.text.slice(idx + matched.length);
       if (before) next.push({ text: before });
-      next.push({ text: m.quote, mark: { type: m.type, low: m.low } });
+      next.push({ text: matched, mark: { type: m.type, low: m.low } });
       if (after) next.push({ text: after });
     }
     tokens = next;
@@ -181,10 +198,19 @@ export default function LiveCall() {
     .filter((k) => !fields[k]?.value)
     .map((k) => FIELDS.find((f) => f.key === k).label);
 
-  // Citas a resaltar en el transcript, derivadas de los campos detectados.
+  // Entidades a resaltar en el transcript, derivadas de los campos detectados.
+  // Término de búsqueda = la cita exacta del LLM o, si falta, el propio valor
+  // (así también se resaltan los campos detectados sin "quote"). Más largos
+  // primero, para que un valor corto no se coma parte de una frase más larga.
   const marks = FIELDS
-    .filter((f) => f.mark && fields[f.key]?.quote)
-    .map((f) => ({ quote: fields[f.key].quote, type: f.mark, low: fields[f.key].low }));
+    .filter((f) => f.mark && (fields[f.key]?.quote || fields[f.key]?.value))
+    .map((f) => {
+      const fld = fields[f.key];
+      const term = fld.quote || String(fld.value);
+      return { re: buildMarkRegex(term), type: f.mark, low: fld.low, len: term.length };
+    })
+    .filter((m) => m.re)
+    .sort((a, b) => b.len - a.len);
 
   // Tokens de un segmento: si ya vienen marcados (mock/archivo) se respetan;
   // si es texto plano (live) se re-tokeniza con las citas actuales.
@@ -226,8 +252,8 @@ export default function LiveCall() {
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
       {/* sub-header */}
-      <div style={{ padding: "12px 22px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 14 }}>
-        <span className="db-pill db-pill-burgundy"><Icon d={I.clock} size={11} /> Telefon · Live</span>
+      <div style={{ padding: "var(--bar-pad-y) var(--bar-pad-x)", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 16 }}>
+        <span className="db-pill db-pill-burgundy"><Icon d={I.phone} size={11} /> Telefon · Live</span>
         {status === "idle" && <span className="db-faint" style={{ fontSize: 12 }}>Bereit für eingehende Anrufe.</span>}
         {live && (
           <span className="await-banner" style={{ padding: "5px 12px" }}>
@@ -240,7 +266,7 @@ export default function LiveCall() {
       {/* split: transcript | datos */}
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
         {/* TRANSCRIPT */}
-        <section ref={scrollRef} className="db-scroll" style={{ flex: "1 1 56%", minWidth: 0, padding: 22, borderRight: "1px solid var(--db-line)" }}>
+        <section ref={scrollRef} className="db-scroll" style={{ flex: "1 1 56%", minWidth: 0, padding: "var(--pane-pad)", borderRight: "1px solid var(--db-line)" }}>
           <div className="db-card-title" style={{ marginBottom: 10 }}>Transkript</div>
           {/* Leyenda de colores: qué tipo de dato resalta cada color (igual que en e-mails) */}
           {(segments.length > 0 || partialText) && (
@@ -255,10 +281,11 @@ export default function LiveCall() {
             </div>
           )}
           {segments.length === 0 && !partialText ? (
-            <div className="db-empty" style={{ padding: "40px 24px" }}>
-              <Icon d={I.clock} size={22} />
-              <div>Noch kein Anruf. Eingehende Telefonate erscheinen hier <b>automatisch</b>.</div>
-            </div>
+            <EmptyState
+              icon="phone"
+              title="Noch kein Anruf"
+              hint="Eingehende Telefonate erscheinen hier automatisch — Transkript und erkannte Daten füllen sich live, ganz ohne Klick."
+            />
           ) : (
             <div className="transcript">
               {segments.map((seg, i) => (
@@ -282,14 +309,14 @@ export default function LiveCall() {
 
         {/* DATOS + acciones */}
         <section style={{ flex: "1 1 44%", minWidth: 0, display: "flex", flexDirection: "column", background: "var(--db-paper)" }}>
-          <div style={{ padding: "16px 18px 10px", borderBottom: "1px solid var(--db-line)" }}>
+          <div style={{ padding: "var(--bar-pad-y) var(--bar-pad-x) var(--s-1)", borderBottom: "1px solid var(--db-line)" }}>
             <div className="db-card-title">Automatisch erkannte Daten</div>
-            <div className="db-muted" style={{ fontSize: 11.5, marginTop: 2 }}>
+            <div className="db-muted" style={{ fontSize: 12, marginTop: 2 }}>
               Aktualisiert sich live während des Gesprächs.
             </div>
           </div>
 
-          <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "8px 14px 14px" }}>
+          <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "var(--s-1) var(--s-2) var(--s-2)" }}>
             {FIELDS.map((f) => {
               const data = fields[f.key];
               const has = !!data?.value;
@@ -318,7 +345,7 @@ export default function LiveCall() {
                   </span>
                   <span>
                     {has && data.conf != null && (
-                      <span style={{ fontFamily: "var(--db-font-mono)", fontSize: 10.5, color: "var(--db-text-faint)" }}>
+                      <span style={{ fontFamily: "var(--db-font-mono)", fontSize: 11, color: "var(--db-text-faint)" }}>
                         {Math.round(data.conf * 100)}%
                       </span>
                     )}
@@ -335,7 +362,7 @@ export default function LiveCall() {
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <Icon d={I.alert} size={14} style={{ color: "var(--db-warn)" }} />
-                    <b style={{ fontSize: 12.5, color: "#7a4a14" }}>
+                    <b style={{ fontSize: 13, color: "#7a4a14" }}>
                       {status === "ended" ? "Vor Abschluss noch erfragen" : "Noch offen — beim Anrufer erfragen"}
                     </b>
                   </div>
@@ -346,7 +373,7 @@ export default function LiveCall() {
               ) : (
                 <div className="sent-banner" style={{ marginTop: 12 }}>
                   <Icon d={I.check} size={15} style={{ color: "#2e5430" }} />
-                  <div style={{ fontSize: 12.5 }}>Alle Pflichtangaben erfasst.</div>
+                  <div style={{ fontSize: 13 }}>Alle Pflichtangaben erfasst.</div>
                 </div>
               ))}
 
@@ -360,7 +387,7 @@ export default function LiveCall() {
             {suggestion && (
               <div className="followup" style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <Icon d={I.spark} size={15} style={{ color: "var(--db-secondary)", marginTop: 1 }} />
-                <div style={{ fontSize: 12.5 }}>{suggestion}</div>
+                <div style={{ fontSize: 13 }}>{suggestion}</div>
               </div>
             )}
           </div>
@@ -376,7 +403,7 @@ export default function LiveCall() {
             ) : (
               <Pill tone="warn">Gespräch läuft</Pill>
             )}
-            <span className="db-muted" style={{ fontSize: 11.5 }}>Prüfen und als Anfrage anlegen.</span>
+            <span className="db-muted" style={{ fontSize: 12 }}>Prüfen und als Anfrage anlegen.</span>
             <span style={{ marginLeft: "auto" }}>
               <Btn
                 kind="primary"
@@ -393,7 +420,7 @@ export default function LiveCall() {
       </div>
 
       {toast && (
-        <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 50, background: "var(--db-primary)", color: "#fbf6e9", padding: "12px 18px", borderRadius: 10, boxShadow: "0 8px 24px -6px rgba(40,20,25,.4)", display: "flex", alignItems: "center", gap: 10, fontSize: 13, maxWidth: 460 }}>
+        <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 50, background: "var(--db-primary)", color: "#fbf6e9", padding: "12px 16px", borderRadius: 10, boxShadow: "0 8px 24px -6px rgba(40,20,25,.4)", display: "flex", alignItems: "center", gap: 8, fontSize: 13, maxWidth: 460 }}>
           <Icon d={I.check} size={16} stroke={2.2} /> {toast}
         </div>
       )}

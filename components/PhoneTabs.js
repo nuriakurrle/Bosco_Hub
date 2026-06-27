@@ -23,7 +23,7 @@ export default function PhoneTabs({ calls = [] }) {
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
       {/* barra de pestañas */}
-      <div className="intake-tabs" style={{ padding: "10px 22px 0", borderBottom: "1px solid var(--db-line)" }}>
+      <div className="intake-tabs" style={{ padding: "8px 24px 0", borderBottom: "1px solid var(--db-line)" }}>
         <button className={`intake-tab ${tab === "live" ? "active" : ""}`} onClick={() => setTab("live")}>
           <Icon d={I.clock} size={13} /> Live
         </button>
@@ -42,22 +42,22 @@ export default function PhoneTabs({ calls = [] }) {
 function CallLog({ calls }) {
   if (!calls.length) {
     return (
-      <div className="db-empty" style={{ flex: 1, padding: "60px 24px" }}>
+      <div className="db-empty" style={{ flex: 1, padding: "64px 24px" }}>
         <Icon d={I.clock} size={22} />
         <div>Noch keine Telefonate aufgezeichnet. Beantwortete Anrufe erscheinen hier automatisch.</div>
       </div>
     );
   }
   return (
-    <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "16px 22px" }}>
+    <div className="db-scroll" style={{ flex: 1, minHeight: 0, padding: "16px 24px" }}>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
-          <tr style={{ textAlign: "left", color: "var(--db-text-muted)", fontSize: 11.5 }}>
-            <th style={{ padding: "8px 10px", fontWeight: 600 }}>Zeitpunkt</th>
-            <th style={{ padding: "8px 10px", fontWeight: 600 }}>Gruppe / Schule</th>
-            <th style={{ padding: "8px 10px", fontWeight: 600 }}>Kontakt</th>
-            <th style={{ padding: "8px 10px", fontWeight: 600 }}>Art / Programm</th>
-            <th style={{ padding: "8px 10px", fontWeight: 600 }}>Status</th>
+          <tr style={{ textAlign: "left", color: "var(--db-text-muted)", fontSize: 12 }}>
+            <th style={{ padding: "8px", fontWeight: 600 }}>Zeitpunkt</th>
+            <th style={{ padding: "8px", fontWeight: 600 }}>Gruppe / Schule</th>
+            <th style={{ padding: "8px", fontWeight: 600 }}>Kontakt</th>
+            <th style={{ padding: "8px", fontWeight: 600 }}>Art / Programm</th>
+            <th style={{ padding: "8px", fontWeight: 600 }}>Status</th>
             <th />
           </tr>
         </thead>
@@ -67,15 +67,15 @@ function CallLog({ calls }) {
             const art = c.fields?.find((f) => f.id === "art")?.value || c.summary || "Telefonat";
             return (
               <tr key={c.id} style={{ borderTop: "1px solid var(--db-line)" }}>
-                <td style={{ padding: "11px 10px", whiteSpace: "nowrap" }}>
+                <td style={{ padding: "12px 8px", whiteSpace: "nowrap" }}>
                   <Link href={`/inquiry/${c.id}`} style={{ fontWeight: 600 }}>{c.receivedAbs || c.received || "—"}</Link>
                 </td>
-                <td style={{ padding: "11px 10px" }}>{c.school}</td>
-                <td style={{ padding: "11px 10px" }}>{c.from}</td>
-                <td style={{ padding: "11px 10px", color: "var(--db-text-muted)" }}>{art}</td>
-                <td style={{ padding: "11px 10px" }}><Pill tone={st.tone}>{st.label}</Pill></td>
-                <td style={{ padding: "11px 10px", textAlign: "right" }}>
-                  <Link href={`/inquiry/${c.id}`} style={{ fontSize: 12.5, fontWeight: 600, color: "var(--db-primary)" }}>
+                <td style={{ padding: "12px 8px" }}>{c.school}</td>
+                <td style={{ padding: "12px 8px" }}>{c.from}</td>
+                <td style={{ padding: "12px 8px", color: "var(--db-text-muted)" }}>{art}</td>
+                <td style={{ padding: "12px 8px" }}><Pill tone={st.tone}>{st.label}</Pill></td>
+                <td style={{ padding: "12px 8px", textAlign: "right" }}>
+                  <Link href={`/inquiry/${c.id}`} style={{ fontSize: 13, fontWeight: 600, color: "var(--db-primary)" }}>
                     Öffnen →
                   </Link>
                 </td>

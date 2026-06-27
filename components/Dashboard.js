@@ -3,8 +3,25 @@
 // Aktivitäten + Auslastung), aber gefüllt mit den echten ZUK-Daten.
 import Link from "next/link";
 import { Icon, I } from "@/components/icons";
-import { Pill, Card, StatCard } from "@/components/ui";
+import { Pill, Card, StatCard, HouseTag } from "@/components/ui";
 import { Donut, AreaLine } from "@/components/Charts";
+
+function fmtArrival(d) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+// „in X Tagen / Wochen / Monaten" bis zur Anreise.
+function relDays(d) {
+  if (!d) return "";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((new Date(d) - today) / 86400000);
+  if (days <= 0) return "heute";
+  if (days === 1) return "morgen";
+  if (days < 7) return `in ${days} Tagen`;
+  if (days < 31) return `in ${Math.round(days / 7)} Wo.`;
+  return `in ${Math.round(days / 30)} Mon.`;
+}
 
 const INK = {
   info: "var(--db-info)",
@@ -23,8 +40,23 @@ function initials(name = "") {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
 }
 
-export default function Dashboard({ data }) {
-  const { kpis, statusDonut, totalInquiries, series, houses, recent, team } = data;
+export default function Dashboard({ data, me, staff = [] }) {
+  const { kpis, statusDonut, totalInquiries, series, houses, recent, team,
+    upcoming = [], attention = {}, sparks = {} } = data;
+  // Personalisierter Kopf: Gruß + Datum.
+  const meName = staff.find((s) => s.key === me)?.name?.split(/\s+/)[0] || "";
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const greeting = now.getHours() < 11 ? "Guten Morgen" : now.getHours() < 18 ? "Guten Tag" : "Guten Abend";
+  // „Braucht Aufmerksamkeit" — nur, was wirklich ansteht.
+  const attn = [];
+  if (attention.overdueContracts > 0)
+    attn.push({ icon: "alert", tone: "error", text: `${attention.overdueContracts} Vertrag${attention.overdueContracts > 1 ? "e" : ""} überfällig`, href: "/vertraege?focus=overdue" });
+  if (attention.unassigned > 0)
+    attn.push({ icon: "flag", tone: "warn", text: `${attention.unassigned} nicht zugewiesen`, href: "/posteingang?filter=unassigned" });
+  (attention.overbookedHouses || []).forEach((h) =>
+    attn.push({ icon: "alert", tone: "error", text: `${h.house} überbucht · ${h.pct}%`, href: "/kalender" }));
+
   const maxTeam = Math.max(1, ...team.map((t) => t.open));
   const xLabels = series.length
     ? [series[0].label, series[Math.floor(series.length / 2)].label, series[series.length - 1].label]
@@ -36,11 +68,11 @@ export default function Dashboard({ data }) {
   return (
     <div className="dash-wrap db-scroll">
       <div className="dash-inner">
-        {/* Kopf */}
+        {/* Kopf — personalisierter Gruß + Datum */}
         <div className="dash-head">
           <div>
-            <div className="db-kicker" style={{ color: "var(--db-primary)" }}>ZUK · Tagesüberblick</div>
-            <h1 className="db-h1" style={{ fontSize: 22, marginTop: 2 }}>Übersicht</h1>
+            <div className="db-kicker" style={{ color: "var(--db-primary)", textTransform: "capitalize" }}>{dateStr}</div>
+            <h1 className="db-h1" style={{ fontSize: 22, marginTop: 2 }}>{greeting}{meName ? `, ${meName}` : ""}</h1>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Link href="/posteingang" className="db-btn db-btn-primary">
@@ -52,24 +84,36 @@ export default function Dashboard({ data }) {
           </div>
         </div>
 
-        {/* Stat-Karten */}
+        {/* Stat-Karten — einheitliche read-only KPIs (Marken-Akzent als Left-Border,
+            keine Voll-Maroon-Hero, kein dekorativer Pfeil → klar nicht klickbar). */}
         <div className="dash-stats">
-          <StatCard tone="info" icon="inbox" label="Offene Anfragen" value={kpis.open}
+          <StatCard tone="primary" icon="inbox" label="Offene Anfragen" value={kpis.open}
             sub={`${kpis.unassigned} nicht zugewiesen`} />
           <StatCard tone="warn" icon="alert" label="Info fehlt" value={kpis.needsInfo}
             sub="Rückfrage nötig" />
           <StatCard tone="success" icon="bed" label="Buchungen" value={kpis.bookings}
-            sub={`${kpis.guests} Gäste gesamt`} />
+            sub={`${kpis.guests} Gäste gesamt`} spark={sparks.bookings} />
           <StatCard tone="primary" icon="spark" label="Neu diese Woche" value={kpis.thisWeek}
-            delta={kpis.thisWeekDelta}
-            sub={`${kpis.checkinToday} Check-in heute`} />
+            sub={`${kpis.checkinToday} Check-in heute`} spark={sparks.inquiries} />
         </div>
+
+        {/* Braucht Aufmerksamkeit — nur wenn etwas ansteht (klickbar zur Quelle) */}
+        {attn.length > 0 && (
+          <div className="dash-attention">
+            <span className="da-label"><Icon d={I.alert} size={13} /> Braucht Aufmerksamkeit</span>
+            {attn.map((a, i) => (
+              <Link key={i} href={a.href} className={`da-chip t-${a.tone}`}>
+                <Icon d={I[a.icon]} size={12} /> {a.text} <Icon d={I.chevron} size={11} />
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Donut + Linien-Chart */}
         <div className="dash-row2">
           <Card title="Anfragen nach Status">
             <div className="donut-wrap">
-              <Donut segments={statusDonut} total={totalInquiries} centerLabel="Anfragen" />
+              <Donut segments={statusDonut} total={totalInquiries} centerLabel="Anfragen" size={220} />
               <div className="donut-legend">
                 {statusDonut.map((s) => (
                   <div key={s.key} className="legend-row">
@@ -100,8 +144,35 @@ export default function Dashboard({ data }) {
           </Card>
         </div>
 
-        {/* Aktivitäten + Auslastung + Team */}
+        {/* Anreisen + Aktivitäten + Auslastung + Team */}
         <div className="dash-row3">
+          <Card title="Anstehende Anreisen" kicker="nächste Check-ins">
+            {upcoming.length === 0 ? (
+              <div className="db-muted" style={{ fontSize: 13, padding: "10px 2px" }}>
+                Keine anstehenden Anreisen.
+              </div>
+            ) : (
+              <div className="arrivals-list">
+                {upcoming.map((u) => (
+                  <Link
+                    key={u.id}
+                    href={u.inquiryId ? `/inquiry/${u.inquiryId}` : "/buchungen"}
+                    className="arrival-row"
+                  >
+                    <span className="arrival-when">
+                      <span className="arrival-date mono">{fmtArrival(u.start)}</span>
+                      <span className="arrival-in">{relDays(u.start)}</span>
+                    </span>
+                    <span className="arrival-main">
+                      <span className="arrival-title">{u.title}</span>
+                      <HouseTag area={u.house} label={u.house} />
+                    </span>
+                    <span className="arrival-people mono">{u.people != null ? `${u.people} P` : "—"}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Card>
           <Card title="Letzte Aktivitäten">
             <div className="activity-list">
               {recent.map((r) => {
@@ -113,9 +184,9 @@ export default function Dashboard({ data }) {
                       <span className="act-title">{r.school}</span>
                       <span className="act-text">{r.text}</span>
                     </span>
-                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                       <Pill tone={st.tone} dot={false}>{st.label}</Pill>
-                      <span className="db-faint" style={{ fontSize: 10.5 }}>{r.time}</span>
+                      <span className="db-faint" style={{ fontSize: 11 }}>{r.time}</span>
                     </span>
                   </Link>
                 );

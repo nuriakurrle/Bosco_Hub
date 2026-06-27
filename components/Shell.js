@@ -3,9 +3,7 @@
 // und konsistent auf allen Seiten (Übersicht / Posteingang / Buchungen).
 import Link from "next/link";
 import { Icon, I } from "@/components/icons";
-import SearchBox from "@/components/SearchBox";
-import UserSwitcher from "@/components/UserSwitcher";
-import ThemeToggle from "@/components/ThemeToggle";
+import TeamLogin from "@/components/TeamLogin";
 import CallNotifier from "@/components/CallNotifier";
 
 const NAV = [
@@ -37,28 +35,12 @@ export default function Shell({ active, staff = [], me, children }) {
           ))}
         </nav>
 
-        <div className="app-nav-foot">
-          <div className="app-nav-section">Team · {staff.length}</div>
-          {staff.map((s) => (
-            <div key={s.key} className="app-nav-person" title={s.skills ? `Kann: ${s.skills.replace(/,/g, ", ")}` : s.area || ""}>
-              <span className="avatar sm">{s.short}</span>
-              <span className="np-text">
-                <span className="np-name">{s.name}{s.key === me ? " · ich" : ""}</span>
-                <span className="np-area">{s.area || "—"}{s.skills ? ` · ${s.skills.split(",").length} Formate` : ""}</span>
-              </span>
-            </div>
-          ))}
-        </div>
+        <TeamLogin staff={staff} me={me} />
       </aside>
 
-      {/* Hauptbereich */}
+      {/* Hauptbereich — die Suche sitzt jetzt direkt über der Anfragen-Liste
+          (siehe Inbox.js), daher hier keine separate Topbar mehr. */}
       <div className="app-main">
-        <div className="app-topbar">
-          <SearchBox />
-          <span style={{ flex: 1 }} />
-          <ThemeToggle />
-          <UserSwitcher staff={staff} me={me} />
-        </div>
         <div className="app-content">{children}</div>
       </div>
 

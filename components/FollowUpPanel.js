@@ -21,7 +21,7 @@ const inputStyle = {
   fontSize: 14,
   border: "1px solid var(--db-line-strong)",
   borderRadius: 6,
-  padding: "8px 10px",
+  padding: "8px",
   color: "var(--db-text)",
   background: "#fff",
 };
@@ -89,7 +89,7 @@ export default function FollowUpPanel({ item, missing = [], onSend, makeDraft, o
     <div className="followup" style={{ marginTop: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <Icon d={I.send} size={14} style={{ color: "var(--db-secondary)" }} />
-        <b style={{ fontSize: 12.5 }}>Rückfrage — fehlende Infos</b>
+        <b style={{ fontSize: 13 }}>Rückfrage — fehlende Infos</b>
         <span className="db-faint" style={{ fontSize: 11 }}>
           · {missing.length} Angabe{missing.length > 1 ? "n" : ""}
         </span>
@@ -115,7 +115,7 @@ export default function FollowUpPanel({ item, missing = [], onSend, makeDraft, o
           <label style={labelStyle}>
             Nachricht
             <textarea
-              style={{ ...inputStyle, minHeight: 250, fontSize: 14.5, fontFamily: "var(--db-font-serif)", lineHeight: 1.6 }}
+              style={{ ...inputStyle, minHeight: 250, fontSize: 14, fontFamily: "var(--db-font-serif)", lineHeight: 1.6 }}
               value={body}
               onChange={(e) => setBody(e.target.value)}
             />

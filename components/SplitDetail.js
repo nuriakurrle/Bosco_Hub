@@ -7,14 +7,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon, I } from "@/components/icons";
 import { Pill, Btn, Card } from "@/components/ui";
-import AssignControl from "@/components/AssignControl";
+import DetailHeader from "@/components/DetailHeader";
 import { VerdictPill, verdictMeta, CapacityMeter, AvailabilityCard, SafetyGate } from "@/components/Availability";
 import { Stepper, VerifyGate, MissingSummary, DuplicateBanner, nowTime } from "@/components/HitlGate";
 import EmailSource from "@/components/EmailSource";
 import NotesPanel from "@/components/NotesPanel";
 import FollowUpPanel from "@/components/FollowUpPanel";
 import ConfirmationPanel from "@/components/ConfirmationPanel";
-import { suggestedPerson } from "@/lib/team";
 import { buildSplitFollowUp } from "@/lib/followup";
 import { buildSplitConfirmation } from "@/lib/confirmation";
 
@@ -162,7 +161,6 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
       )
     );
     showToast(`${items.length} Buchungen angelegt — je Status „Anfrage".`);
-    setTimeout(() => router.push("/posteingang"), 1200);
   }
 
   async function onAssign(id, who) {
@@ -190,48 +188,35 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
   return (
     <div className="detail-view" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--db-bg)" }}>
       {/* sub-header */}
-      <div style={{ padding: "12px 22px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 14 }}>
-        <button className="db-btn db-btn-ghost db-btn-sm" onClick={() => router.push("/posteingang")}>
-          <Icon d={I.chevron} size={13} style={{ transform: "rotate(180deg)" }} /> Posteingang
-        </button>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <DetailHeader
+        title={primary.school}
+        assignId={primary.id}
+        assignedTo={assignedTo}
+        responsibleArea={primary.responsibleArea}
+        onAssign={onAssign}
+        staff={staff}
+        me={me}
+        badges={
+          <>
             <span className="db-pill db-pill-info">
               <Icon d={I.mail} size={11} /> E-Mail
             </span>
             <Pill tone="burgundy" dot={false}>
               {items.length} Anfragen in 1 E-Mail
             </Pill>
-          </div>
-          <h1 className="serif" style={{ margin: "3px 0 0", fontSize: 21, fontWeight: 500, color: "var(--db-primary-ink)" }}>
-            {primary.school}
-          </h1>
-        </div>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11.5, color: "var(--db-text-muted)" }}>
-            Zuständig:
-            <AssignControl
-              id={primary.id}
-              who={assignedTo}
-              suggest={suggestedPerson(primary.responsibleArea, staff)}
-              onAssign={onAssign}
-              compact
-              staff={staff}
-              me={me}
-            />
-          </span>
-        </span>
-      </div>
+          </>
+        }
+      />
 
       {/* Prozess-Schritte */}
-      <div style={{ padding: "8px 22px", borderBottom: "1px solid var(--db-line)", background: "var(--db-paper-2)" }}>
+      <div style={{ padding: "var(--s-1) var(--bar-pad-x)", borderBottom: "1px solid var(--db-line)", background: "var(--db-paper-2)" }}>
         <Stepper current={splitStep} />
       </div>
 
       {/* split body */}
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
         {/* left: email */}
-        <section className="db-scroll" style={{ flex: "1 1 44%", minWidth: 0, padding: 22, borderRight: "1px solid var(--db-line)" }}>
+        <section className="db-scroll" style={{ flex: "1 1 44%", minWidth: 0, padding: "var(--pane-pad)", borderRight: "1px solid var(--db-line)" }}>
           <Card title="E-Mail" kicker={primary.receivedAbs}>
             <EmailSource
               item={primary}
@@ -256,7 +241,7 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
           {/* E-Mails an den Kunden — EINE Mail an die Schule für alle Klassen */}
           <div style={{ marginTop: 14 }}>
             <div className="det-section-head"><Icon d={I.mail} size={12} /> E-Mails an den Kunden</div>
-            <div className="db-faint" style={{ fontSize: 11.5, margin: "-2px 0 4px" }}>
+            <div className="db-faint" style={{ fontSize: 12, margin: "-2px 0 4px" }}>
               Eine Mail an die Schule: die Rückfrage bündelt fehlende Infos je Klasse, die Bestätigung listet alle Termine.
             </div>
             <FollowUpPanel
@@ -276,13 +261,13 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
 
         {/* right: requests */}
         <section style={{ flex: "1 1 56%", minWidth: 0, display: "flex", flexDirection: "column", background: "var(--db-paper)" }}>
-          <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ padding: "var(--bar-pad-y) var(--bar-pad-x) var(--s-1)", borderBottom: "1px solid var(--db-line)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <div className="db-card-title">Erkannte Anfragen · {items.length}</div>
           </div>
 
           <div
             className="db-scroll"
-            style={{ flex: 1, minHeight: 0, padding: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignContent: "start" }}
+            style={{ flex: 1, minHeight: 0, padding: "var(--pane-pad)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignContent: "start" }}
           >
             {items.map((s, idx) => {
               const isDone = done[s.id];
@@ -312,12 +297,12 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span className="split-num">{idx + 1}</span>
-                    <span style={{ fontWeight: 700, fontSize: 13.5 }}>{grupo}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{grupo}</span>
                     <span style={{ marginLeft: "auto" }}>
                       {a ? <VerdictPill verdict={a.verdict} /> : <Pill tone="neutral">Platz prüfen</Pill>}
                     </span>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <div className="split-kv">
                       <span className="k">Termin</span>
                       <span className="mono">{termin}</span>
@@ -432,7 +417,7 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
                       {assessments[s.id]?.availability && (
                         <>
                           <div className="det-section-head"><Icon d={I.house} size={12} /> Belegung &amp; Eignung</div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                             <AvailabilityCard
                               assessment={assessments[s.id]}
                               onSelectAlternative={(alt) =>
@@ -461,7 +446,7 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
                             label={`„${grupo}" geprüft und freigeben.`}
                           />
                           {!mResolved && (
-                            <div className="db-muted" style={{ fontSize: 11.5, marginTop: 6 }}>
+                            <div className="db-muted" style={{ fontSize: 12, marginTop: 6 }}>
                               Erst die fehlenden Pflicht-Angaben klären oder „trotzdem fortfahren" bestätigen.
                             </div>
                           )}
@@ -511,20 +496,31 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
                 {notDone.filter((x) => !verified[x.id]).length} von {notDone.length} noch nicht freigegeben
               </Pill>
             )}
-            <span className="db-muted" style={{ fontSize: 11.5 }}>
+            <span className="db-muted" style={{ fontSize: 12 }}>
               Jede Klasse einzeln prüfen &amp; freigeben — dann anlegen.
             </span>
-            <span style={{ marginLeft: "auto" }}>
-              <Btn
-                kind="primary"
-                size="sm"
-                iconR="arrowRight"
-                disabled={allDone || !allVerified}
-                style={allDone || !allVerified ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
-                onClick={() => allVerified && createAll()}
-              >
-                Alle freigegebenen anlegen
-              </Btn>
+            <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+              {allDone ? (
+                <>
+                  <Btn kind="secondary" size="sm" onClick={() => router.push("/posteingang")}>
+                    Zum Posteingang
+                  </Btn>
+                  <Btn kind="primary" size="sm" iconR="arrowRight" onClick={() => router.push("/buchungen")}>
+                    Zu den Buchungen
+                  </Btn>
+                </>
+              ) : (
+                <Btn
+                  kind="primary"
+                  size="sm"
+                  iconR="arrowRight"
+                  disabled={!allVerified}
+                  style={!allVerified ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+                  onClick={() => allVerified && createAll()}
+                >
+                  Alle freigegebenen anlegen
+                </Btn>
+              )}
             </span>
           </div>
         </section>
@@ -540,12 +536,12 @@ export default function SplitDetail({ items, staff = [], me, assessments = {}, d
             zIndex: 50,
             background: "var(--db-primary)",
             color: "#fbf6e9",
-            padding: "12px 18px",
+            padding: "12px 16px",
             borderRadius: 10,
             boxShadow: "0 8px 24px -6px rgba(40,20,25,.4)",
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: 8,
             fontSize: 13,
           }}
         >

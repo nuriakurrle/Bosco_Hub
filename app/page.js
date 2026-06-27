@@ -33,7 +33,7 @@ export default async function Home() {
           <code>cd n8n &amp;&amp; docker compose up -d</code>
         </div>
       ) : (
-        <Dashboard data={data} />
+        <Dashboard data={data} me={me} staff={staff} />
       )}
     </Shell>
   );

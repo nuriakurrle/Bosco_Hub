@@ -5,9 +5,9 @@
 // echten Audiodateien hat, werden Zeitstempel aus der Wortmenge geschätzt und
 // die Wiedergabe simuliert; echte Audiozeit kann das später ersetzen (n8n).
 import { useEffect, useMemo, useRef, useState } from "react";
+import { findMarkRanges } from "@/lib/highlight";
 
 const WORD_SEC = 0.36; // geschätzte Sprechdauer je Wort
-const MARK_KEYS = new Set(["contact_person", "school_name", "date_range", "number_of_people", "program_type", "house", "grade_level"]);
 
 function fmt(sec) {
   const m = Math.floor(sec / 60);
@@ -47,33 +47,23 @@ function parseSegments(text) {
   });
 }
 
-// Wort-Zeichen inkl. deutscher Umlaute (für Wortgrenzen; \b ist nur ASCII).
-const WORD = "A-Za-zÄÖÜäöüß0-9_";
-
-// Einen Suchwert escapen und an Wort-Rändern mit Grenzen versehen, damit z. B.
-// "10" nicht innerhalb von "100" markiert wird (nur wo der Rand ein Wort-Zeichen ist).
-function boundedPattern(v) {
-  const esc = v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const left = new RegExp(`^[${WORD}]`).test(v) ? `(?<![${WORD}])` : "";
-  const right = new RegExp(`[${WORD}]$`).test(v) ? `(?![${WORD}])` : "";
-  return left + esc + right;
-}
-
-// Text mit gelben Markierungen für automatisch erkannte Angaben rendern.
-function renderMarked(text, values) {
-  if (!values.length) return text;
-  const esc = [...values].sort((a, b) => b.length - a.length).map(boundedPattern);
-  const re = new RegExp(`(${esc.join("|")})`, "gi");
+// Text mit denselben farbcodierten Markierungen wie die E-Mail-Ansicht rendern
+// (gleiche hl-*-Klassen, gleiche Logik via findMarkRanges → einheitliche Farben).
+function renderMarked(text, fields) {
+  const kept = findMarkRanges(text, fields);
+  if (!kept.length) return text;
   const out = [];
-  let last = 0;
-  let m;
-  while ((m = re.exec(text))) {
-    if (m.index > last) out.push(text.slice(last, m.index));
-    out.push(<span key={m.index} className="tr-mark">{m[0]}</span>);
-    last = m.index + m[0].length;
-    if (re.lastIndex === m.index) re.lastIndex++;
-  }
-  if (last < text.length) out.push(text.slice(last));
+  let cursor = 0;
+  kept.forEach((r, i) => {
+    if (r.start > cursor) out.push(text.slice(cursor, r.start));
+    out.push(
+      <mark key={i} className={`hl ${r.cls}`} title={`Erkannt als: ${r.label}`}>
+        {text.slice(r.start, r.end)}
+      </mark>
+    );
+    cursor = r.end;
+  });
+  if (cursor < text.length) out.push(text.slice(cursor));
   return out;
 }
 
@@ -82,13 +72,8 @@ export default function TranscriptPlayer({ text, fields = [] }) {
   const totalWords = useMemo(() => (text.match(/\S+/g) || []).length, [text]);
   const dur = Math.max(1, totalWords * WORD_SEC);
 
-  const markValues = useMemo(
-    () =>
-      fields
-        .filter((f) => MARK_KEYS.has(f.key) && f.status !== "missing" && f.value && f.value.length >= 2 && f.value.length <= 40)
-        .map((f) => f.value),
-    [fields]
-  );
+  // Nur erkannte (nicht fehlende) Felder markieren; Farben/Logik aus lib/highlight.
+  const markFields = useMemo(() => fields.filter((f) => f.status !== "missing"), [fields]);
 
   const wave = useMemo(
     () => Array.from({ length: 56 }, (_, i) => 5 + Math.round(13 * Math.abs(Math.sin(i * 0.6) * Math.cos(i * 0.31)))),
@@ -133,8 +118,8 @@ export default function TranscriptPlayer({ text, fields = [] }) {
         </div>
         <span className="audio-time">{fmt(time)} / {fmt(dur)}</span>
       </div>
-      <div className="db-faint" style={{ fontSize: 10.5, margin: "8px 2px 10px", fontFamily: "var(--db-font-mono)" }}>
-        Auto-Transkription · Deutsch · gelb = automatisch erkannt · simulierte Wiedergabe
+      <div className="db-faint" style={{ fontSize: 11, margin: "8px 2px 10px", fontFamily: "var(--db-font-mono)" }}>
+        Auto-Transkription · Deutsch · farbig markiert = automatisch erkannt · simulierte Wiedergabe
       </div>
 
       <div className="transcript">
@@ -151,7 +136,7 @@ export default function TranscriptPlayer({ text, fields = [] }) {
                 <div className="tr-time">{fmt(s.t)}</div>
                 {sp && <div className={`tr-spk ${sp.side}`}>{sp.label}</div>}
               </div>
-              <div className="tr-text">{renderMarked(s.text, markValues)}</div>
+              <div className="tr-text">{renderMarked(s.text, markFields)}</div>
             </div>
           );
         })}

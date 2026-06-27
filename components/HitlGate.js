@@ -72,10 +72,10 @@ export function DuplicateBanner({ dup, onReview }) {
     <div className="dup-banner">
       <Icon d={I.link} size={15} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: 12.5 }}>
+        <div style={{ fontWeight: 700, fontSize: 13 }}>
           Mögliche Doppelanfrage ({pct}% Übereinstimmung)
         </div>
-        <div className="db-muted" style={{ fontSize: 11.5, marginTop: 1 }}>
+        <div className="db-muted" style={{ fontSize: 12, marginTop: 1 }}>
           Ähnelt Buchung <span className="mono">#{dup.booking.id}</span>
           {dup.booking.school ? ` · ${dup.booking.school}` : ""}
           {dup.reasons.length ? ` — ${dup.reasons.join(", ")}` : ""}.
@@ -112,7 +112,7 @@ export function MissingSummary({ missing = [], confirmed, onConfirm }) {
       </ul>
 
       <div className="ms-actions">
-        <span className="db-faint" style={{ fontSize: 11.5 }}>
+        <span className="db-faint" style={{ fontSize: 12 }}>
           <Icon d={I.send} size={11} style={{ verticalAlign: -1 }} /> Rückfrage-E-Mail dazu unten als Entwurf.
         </span>
         <label className="ms-confirm">

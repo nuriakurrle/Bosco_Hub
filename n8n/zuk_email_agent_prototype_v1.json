@@ -131,7 +131,7 @@
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"request_count\": { \"type\": \"number\" },\n    \"summary\": { \"type\": \"string\" },\n    \"requests\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"school_name\": { \"type\": \"string\" },\n          \"contact_person\": { \"type\": \"string\" },\n          \"program_type\": { \"type\": \"string\" },\n          \"house\": { \"type\": \"string\" },\n          \"date_range\": { \"type\": \"string\" },\n          \"number_of_people\": { \"type\": \"string\" },\n          \"grade_level\": { \"type\": \"string\" },\n          \"special_requirements\": { \"type\": \"string\" },\n          \"missing_fields\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"status\": { \"type\": \"string\" },\n          \"contains_sensitive_data\": { \"type\": \"boolean\" },\n          \"sensitive_data_note\": { \"type\": \"string\" }\n        },\n        \"required\": [\"status\", \"missing_fields\", \"contains_sensitive_data\"]\n      }\n    }\n  },\n  \"required\": [\"requests\", \"request_count\"]\n}"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"request_count\": { \"type\": \"number\" },\n    \"summary\": { \"type\": \"string\" },\n    \"requests\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"school_name\": { \"type\": \"string\" },\n          \"contact_person\": { \"type\": \"string\" },\n          \"program_type\": { \"type\": \"string\" },\n          \"house\": { \"type\": \"string\" },\n          \"date_range\": { \"type\": \"string\" },\n          \"number_of_people\": { \"type\": \"string\" },\n          \"grade_level\": { \"type\": \"string\" },\n          \"special_requirements\": { \"type\": \"string\" },\n          \"missing_fields\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"status\": { \"type\": \"string\" },\n          \"contains_sensitive_data\": { \"type\": \"boolean\" },\n          \"sensitive_data_note\": { \"type\": \"string\" },\n          \"email_type\": { \"type\": \"string\", \"enum\": [\"booking\", \"other\"] }\n        },\n        \"required\": [\"status\", \"missing_fields\", \"contains_sensitive_data\", \"email_type\"]\n      }\n    }\n  },\n  \"required\": [\"requests\", \"request_count\"]\n}"
       },
       "id": "node-output-parser",
       "name": "Structured Output Parser",
@@ -145,7 +145,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are an assistant for the booking team at Kloster Benediktbeuern (Don Bosco Jugendwerk), a youth education center in Bavaria. Incoming emails come from teachers and group leaders, usually in German, requesting stays for school classes and youth groups.\n\nMost of these emails ARE booking inquiries, so your default is to extract them. Only skip an email when it is CLEARLY not a booking inquiry: automated system notifications (OneDrive or SharePoint sharing, calendar invites), newsletters, out-of-office auto-replies, delivery or read receipts, or spam. In that single case, return request_count 0 and an empty requests array and invent nothing. If the email mentions a group or class, dates, a number of people, or a stay or program — even when the sender or some details are missing — then it IS a booking inquiry and you must extract it. When in doubt, treat it as a booking inquiry.\n\nFor a booking inquiry, extract EVERY booking request it contains. One email often holds several separate requests, for example different dates or different classes. Treat each as its own request.\n\nEMAIL METADATA\nFrom: {{ $json.from }}\nSent to: {{ $json.to }}\nSubject: {{ $json.subject }}\nHouse hint from address: {{ $json.house_hint }}\n\nEMAIL BODY\n{{ $json.body }}\n\nFor each request, extract: school_name, contact_person, program_type, house, date_range, number_of_people, grade_level, special_requirements.\n\nRouting rules for the house field: a Schullandheim request belongs to the Jugendherberge. An Orientierungstage or Besinnungstage request belongs to the Aktionszentrum. Use the house hint when the body is ambiguous. Leave house empty if you genuinely cannot tell.\n\nmissing_fields: list any required field that is absent from the email. Required fields are date_range, number_of_people, program_type and school_name.\n\nstatus: set to \"complete\" only if date_range, number_of_people and program_type are all present. Otherwise set to \"needs_info\".\n\ncontains_sensitive_data: true if the email mentions health conditions, mental health, allergies tied to a named person, or any GDPR special category data.\n\nsensitive_data_note: briefly describe the category detected, in German. Never copy the sensitive details verbatim. Leave empty if there is none.\n\nAlso return request_count and a short summary in German written for the staff member.\n\nNever invent information that is not present in the email.",
+        "text": "=You are an assistant for the booking team at Kloster Benediktbeuern (Don Bosco Jugendwerk), a youth education center in Bavaria. Incoming emails come from teachers and group leaders, usually in German, requesting stays for school classes and youth groups.\n\nClassify every email. Most are booking inquiries (email_type \"booking\"): the email mentions a group or class, dates, a number of people, or a stay or program. If so, extract EVERY booking request it contains and set email_type \"booking\" on each. A genuine human email that is NOT a booking inquiry — a question, a reply, a cancellation, or general correspondence — is still relevant to the team: return exactly ONE request for it with email_type \"other\", status \"needs_info\", an empty missing_fields array, all booking fields left empty, and a German summary of what the sender wants. Only pure noise — automated system notifications (OneDrive or SharePoint sharing, calendar invites), newsletters, out-of-office auto-replies, delivery or read receipts, or spam — is skipped entirely: return request_count 0 and an empty requests array and invent nothing. When in doubt between booking and other, prefer booking.\n\nFor a booking inquiry, extract EVERY booking request it contains. One email often holds several separate requests, for example different dates or different classes. Treat each as its own request.\n\nEMAIL METADATA\nFrom: {{ $json.from }}\nSent to: {{ $json.to }}\nSubject: {{ $json.subject }}\nHouse hint from address: {{ $json.house_hint }}\n\nEMAIL BODY\n{{ $json.body }}\n\nFor each request, extract: school_name, contact_person, program_type, house, date_range, number_of_people, grade_level, special_requirements. Always set email_type (\"booking\" or \"other\") on every request.\n\nRouting rules for the house field: a Schullandheim request belongs to the Jugendherberge. An Orientierungstage or Besinnungstage request belongs to the Aktionszentrum. Use the house hint when the body is ambiguous. Leave house empty if you genuinely cannot tell.\n\nmissing_fields: list any required field that is absent from the email. Required fields are date_range, number_of_people, program_type and school_name.\n\nstatus: set to \"complete\" only if date_range, number_of_people and program_type are all present. Otherwise set to \"needs_info\".\n\ncontains_sensitive_data: true if the email mentions health conditions, mental health, allergies tied to a named person, or any GDPR special category data.\n\nsensitive_data_note: briefly describe the category detected, in German. Never copy the sensitive details verbatim. Leave empty if there is none.\n\nAlso return request_count and a short summary in German written for the staff member.\n\nNever invent information that is not present in the email.",
         "hasOutputParser": true
       },
       "id": "node-extract",
@@ -299,7 +299,8 @@
             "sensitive_data_note": "={{ $json.sensitive_data_note }}",
             "channel": "={{ $json.channel }}",
             "summary": "={{ $json.summary }}",
-            "raw_body": "={{ $json.raw_body }}"
+            "raw_body": "={{ $json.raw_body }}",
+            "email_type": "={{ $json.email_type || 'booking' }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -414,6 +415,12 @@
             {
               "id": "raw_body",
               "displayName": "raw_body",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "email_type",
+              "displayName": "email_type",
               "required": false,
               "type": "string"
             }
@@ -472,7 +479,8 @@
             "sensitive_data_note": "={{ $json.sensitive_data_note }}",
             "channel": "={{ $json.channel }}",
             "summary": "={{ $json.summary }}",
-            "raw_body": "={{ $json.raw_body }}"
+            "raw_body": "={{ $json.raw_body }}",
+            "email_type": "={{ $json.email_type || 'booking' }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -587,6 +595,12 @@
             {
               "id": "raw_body",
               "displayName": "raw_body",
+              "required": false,
+              "type": "string"
+            },
+            {
+              "id": "email_type",
+              "displayName": "email_type",
               "required": false,
               "type": "string"
             }

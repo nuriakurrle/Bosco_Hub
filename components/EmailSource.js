@@ -41,8 +41,8 @@ export default function EmailSource({ item, fields, staff = [], activeKey, onMar
 
       {item.subject && <p className="src-subject">{item.subject}</p>}
 
-      {/* Markierungs-Legende (nur für E-Mail-Markierung, nicht für den Player) */}
-      {item.rawBody && !usePlayer && (
+      {/* Markierungs-Legende — gleiche Farben für E-Mail UND Telefon-Transkript */}
+      {item.rawBody && (
         <div className="hl-legend">
           <span className="hl-key"><i className="hl hl-who" /> Schule/Kontakt</span>
           <span className="hl-key"><i className="hl hl-date" /> Zeitraum</span>

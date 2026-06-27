@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
     number_of_people         TEXT,
     grade_level              TEXT,
     special_requirements     TEXT,
+    board_type               TEXT,   -- Verpflegung (Frühstück/Halbpension/Vollpension/Selbstversorgung/Keine)
     missing_fields           TEXT,
     contains_sensitive_data  BOOLEAN DEFAULT FALSE,
     sensitive_data_note      TEXT,
@@ -79,15 +80,20 @@ CREATE TABLE IF NOT EXISTS inquiries (
     updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     -- Columns used by the Next.js dashboard (Bosco_Hub):
     channel                  TEXT NOT NULL DEFAULT 'email',  -- 'email' | 'phone'
+    email_type               TEXT NOT NULL DEFAULT 'booking', -- 'booking' (Buchungsanfrage) | 'other' (sonstige Mail)
     assigned_to              TEXT,                            -- team member assigned in the dashboard
     summary                  TEXT,                            -- the agent's summary for the staff
     raw_body                 TEXT,                            -- original email text (for the "source" panel)
     confirmation_sent_at     TIMESTAMPTZ                      -- when the customer confirmation was sent
 );
 
+-- Für bestehende Datenbanken (CREATE TABLE läuft nur beim ersten Start).
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS email_type TEXT NOT NULL DEFAULT 'booking';
+
 CREATE INDEX IF NOT EXISTS idx_inquiries_status     ON inquiries (tracker_status);
 CREATE INDEX IF NOT EXISTS idx_inquiries_received   ON inquiries (received_at DESC);
 CREATE INDEX IF NOT EXISTS idx_inquiries_school     ON inquiries (school_name);
+CREATE INDEX IF NOT EXISTS idx_inquiries_emailtype  ON inquiries (email_type);
 
 -- ----------------------------------------------------------------
 -- BOOKINGS
@@ -109,6 +115,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     group_label     TEXT,
     contact_person  TEXT,
     program_type    TEXT,
+    board_type      TEXT,   -- Verpflegung (aus der Anfrage übernommen → Küchenplan)
     status          TEXT NOT NULL DEFAULT 'reserved',
     contract_sent   BOOLEAN DEFAULT FALSE,
     notes           TEXT,
@@ -139,13 +146,14 @@ CREATE TABLE IF NOT EXISTS staff (
 -- Seed data: the two ZUK houses and the initial team.
 -- ----------------------------------------------------------------
 INSERT INTO houses (name, description) VALUES
-    ('Jugendherberge', 'Youth hostel with shared bathrooms on each floor'),
-    ('Aktionszentrum', 'Educational center with private bathrooms in rooms')
+    ('Bildungszentrum', 'Bildungs-/Seminarhaus mit Übernachtung (vormals Jugendherberge)'),
+    ('Gästehaus', 'Gästehaus mit Zimmern (vormals Aktionszentrum)'),
+    ('Zeltplatz', 'Zeltplatz mit 4 Gruppenzelten (outdoor / Sommer)')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO staff (key, name, short, area) VALUES
-    ('vanessa', 'Vanessa Berger', 'VB', 'Jugendherberge'),
-    ('andrea',  'Andrea Sturm',   'AS', 'Aktionszentrum'),
+    ('vanessa', 'Vanessa Berger', 'VB', 'Bildungszentrum'),
+    ('andrea',  'Andrea Sturm',   'AS', 'Gästehaus'),
     ('steffi',  'Steffi Lang',    'SL', 'Seminare & Web')
 ON CONFLICT (key) DO NOTHING;
 

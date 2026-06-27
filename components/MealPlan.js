@@ -3,13 +3,17 @@
 // statt Freitext. Allergien/Diät als reine Zahlen (DSGVO). Kopieren + Drucken.
 import { useState } from "react";
 import { Icon, I } from "@/components/icons";
-import { computeMealPlan, buildMealPlan, MEAL_COLS } from "@/lib/mealplan";
+import { computeMealPlan, buildMealPlan, MEAL_COLS, parseRequirements } from "@/lib/mealplan";
 
 const ROW_TONE = { Anreise: "var(--db-info)", Abreise: "var(--db-primary)", Volltag: "var(--db-line)", Tag: "var(--db-info)" };
 
 export function MealButton({ booking }) {
   const [open, setOpen] = useState(false);
-  const [diet, setDiet] = useState({ veg: "", vegan: "", allergien: "", sonstiges: "" });
+  // Diät-Zahlen aus den Anfrage-Anforderungen vorbelegen (editierbar).
+  const [diet, setDiet] = useState(() => {
+    const r = parseRequirements(booking.specialRequirements);
+    return { veg: r.veg || "", vegan: r.vegan || "", allergien: r.allerg || "", sonstiges: "" };
+  });
   const [copied, setCopied] = useState(false);
 
   const plan = open ? computeMealPlan(booking) : null;
@@ -48,7 +52,8 @@ export function MealButton({ booking }) {
         .diet td{border:none;padding:3px 0}
       </style>
       <h1>Küchenplan — ${booking.title || booking.school || "Gruppe"}</h1>
-      <p class="sub">${booking.house || ""} · ${booking.dates} · ${plan.n} Personen</p>
+      <p class="sub">${booking.house || ""} · ${booking.dates} · ${plan.n} Personen · Verpflegung: ${plan.board}</p>
+      ${plan.reqs.raw ? `<p class="sub"><b>Anforderungen:</b> ${plan.reqs.raw}</p>` : ""}
       <table><thead><tr><th>Tag</th>${MEAL_COLS.map((c) => `<th class="num">${c.label}</th>`).join("")}</tr></thead>
       <tbody>${rows}<tr><td><b>Summe</b></td>${totals}</tr></tbody></table>
       <table class="diet"><tr><td>Vegetarisch: <b>${diet.veg || "—"}</b></td><td>Vegan: <b>${diet.vegan || "—"}</b></td>
@@ -76,10 +81,29 @@ export function MealButton({ booking }) {
             </div>
 
             <div style={{ padding: 16, overflow: "auto" }}>
-              <div className="db-muted" style={{ fontSize: 12.5, marginBottom: 12 }}>
-                {booking.house} · {booking.dates} · <b>{plan.n} Personen</b> · {plan.days} Tage
-                <span className="db-faint"> — Anreise mittags, Abreise mit Lunchpaket angenommen.</span>
+              <div className="db-muted" style={{ fontSize: 13, marginBottom: 10 }}>
+                {booking.house} · {booking.dates} · <b>{plan.n} Personen</b> · {plan.days} Tage · Verpflegung: <b>{plan.board}</b>
+                {plan.assumedBoard && <span className="db-faint"> (angenommen)</span>}
               </div>
+
+              {/* Anforderungen aus der Anfrage — fließen direkt in den Plan */}
+              {plan.reqs.raw || plan.reqs.flags.length > 0 ? (
+                <div className="meal-reqs">
+                  <Icon d={I.alert} size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div><b>Anforderungen aus der Anfrage</b>{plan.reqs.raw ? `: ${plan.reqs.raw}` : ""}</div>
+                    {plan.reqs.flags.length > 0 && (
+                      <div className="meal-req-tags">
+                        {plan.reqs.flags.map((f) => <span key={f} className="meal-req-tag">{f}</span>)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="db-faint" style={{ fontSize: 12, marginBottom: 12 }}>
+                  Keine besonderen Diät-/Verpflegungsangaben in der Anfrage hinterlegt.
+                </div>
+              )}
 
               <table className="meal-table">
                 <thead>
@@ -121,7 +145,7 @@ export function MealButton({ booking }) {
             </div>
 
             <div className="modal-foot">
-              <span className="db-faint" style={{ fontSize: 11.5, marginRight: "auto" }}>
+              <span className="db-faint" style={{ fontSize: 12, marginRight: "auto" }}>
                 Endgültige Zahlen bis 2 Wochen vor Anreise an die Küche.
               </span>
               <button className="db-btn db-btn-ghost db-btn-sm" onClick={copy}>{copied ? "kopiert ✓" : "kopieren"}</button>

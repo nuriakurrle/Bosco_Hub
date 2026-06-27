@@ -66,7 +66,7 @@ export default function DraftButton({ booking, label, icon = "doc", kind = "seco
             </div>
             <textarea className="contract-text" value={text} onChange={(e) => setText(e.target.value)} />
             <div className="modal-foot">
-              <span className="db-faint" style={{ fontSize: 11.5, marginRight: "auto" }}>
+              <span className="db-faint" style={{ fontSize: 12, marginRight: "auto" }}>
                 Platzhalter ____ ergänzen · Export folgt über n8n
               </span>
               <button className="db-btn db-btn-ghost db-btn-sm" onClick={copy}>{copied ? "kopiert ✓" : "kopieren"}</button>

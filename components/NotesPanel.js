@@ -48,7 +48,7 @@ export default function NotesPanel({ inquiryId, schoolName, me, initialNotes = [
     <div className="notes-panel">
       <div className="notes-head">
         <Icon d={I.doc} size={14} />
-        <b style={{ fontSize: 12.5 }}>Team-Notizen</b>
+        <b style={{ fontSize: 13 }}>Team-Notizen</b>
         <span className="db-faint" style={{ fontSize: 11 }}>· Übergabe &amp; Wissen zur Schule</span>
       </div>
 

@@ -4,6 +4,7 @@
 import Shell from "@/components/Shell";
 import Inbox from "@/components/Inbox";
 import { getInquiries } from "@/lib/inquiries";
+import { getHouses } from "@/lib/bookings";
 import { getStaff, getCurrentUser } from "@/lib/staff";
 
 export const dynamic = "force-dynamic"; // always fresh
@@ -14,10 +15,11 @@ export default async function Posteingang({ searchParams }) {
   const filter = typeof sp?.filter === "string" ? sp.filter : "all";
   let items = [];
   let staff = [];
+  let houses = [];
   let me = null;
   let error = null;
   try {
-    [items, staff] = await Promise.all([getInquiries(), getStaff()]);
+    [items, staff, houses] = await Promise.all([getInquiries(), getStaff(), getHouses()]);
     me = await getCurrentUser(staff);
   } catch (err) {
     console.error(err);
@@ -37,7 +39,7 @@ export default async function Posteingang({ searchParams }) {
           <code>cd n8n && docker compose up -d</code>
         </div>
       ) : (
-        <Inbox items={items} staff={staff} me={me} query={query} initialFilter={filter} />
+        <Inbox items={items} staff={staff} houses={houses} me={me} query={query} initialFilter={filter} />
       )}
     </Shell>
   );
