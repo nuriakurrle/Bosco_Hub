@@ -227,14 +227,18 @@ function handleWatch(ws) {
 function handleRecordingCallback(req, res) {
   let body = "";
   req.on("data", (c) => { body += c; if (body.length > 1e6) req.destroy(); });
-  req.on("end", async () => {
+  req.on("end", () => {
+    res.writeHead(204); // responder a Twilio YA; no bloquear su callback con el enlace
+    res.end();
     try {
       const p = new URLSearchParams(body);
       const callSid = p.get("CallSid");
       const recordingUrl = p.get("RecordingUrl");
       if (callSid && recordingUrl) {
         const url = process.env.DASHBOARD_URL || "http://localhost:3000";
-        await fetch(`${url}/api/live-call/recording`, {
+        // En 2º plano: el dashboard reintenta hasta que exista la Anfrage de la llamada
+        // (se crea unos segundos después de colgar, tras la extracción final).
+        fetch(`${url}/api/live-call/recording`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ callSid, recordingUrl }),
@@ -242,8 +246,6 @@ function handleRecordingCallback(req, res) {
           .catch((e) => console.error("recording→dashboard:", e.message));
       }
     } catch (e) { console.error("recording callback:", e.message); }
-    res.writeHead(204); // Twilio solo necesita un 2xx
-    res.end();
   });
 }
 
