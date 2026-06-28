@@ -134,7 +134,7 @@ const COL = {
   haus: "house", termin: "date_range", personen: "number_of_people",
   stufe: "grade_level", sonder: "special_requirements",
 };
-async function saveCall(transcript, fields, sensitiveNote) {
+async function saveCall(transcript, fields, sensitiveNote, callSid) {
   const url = process.env.DASHBOARD_URL || "http://localhost:3000";
   const payload = { channel: "phone", raw_body: transcript };
   for (const [k, col] of Object.entries(COL)) {
@@ -142,6 +142,7 @@ async function saveCall(transcript, fields, sensitiveNote) {
   }
   payload.contains_sensitive_data = !!sensitiveNote || !!fields.sonder?.sensitive;
   if (sensitiveNote) payload.sensitive_data_note = sensitiveNote;
+  if (callSid) payload.call_sid = callSid; // enlace a la grabación de Twilio
   payload.summary =
     [fields.art?.value, fields.schule?.value, fields.termin?.value].filter(Boolean).join(" · ") || "Telefonat";
   try {
@@ -183,8 +184,8 @@ function handleTwilio(twilio) {
   broadcast({ type: "reset" });               // limpia la pantalla al empezar
   broadcast({ type: "call", active: true });  // enciende el aviso global
 
-  // Capturamos transcript + últimos campos para guardar la llamada al colgar.
-  let lastFields = {}, sensNote = null, fullText = "";
+  // Capturamos transcript + últimos campos + CallSid para guardar la llamada al colgar.
+  let lastFields = {}, sensNote = null, fullText = "", callSid = null;
   const send = (obj) => {
     broadcast(obj);
     if (obj.type === "fields") lastFields = { ...lastFields, ...obj.fields };
@@ -197,7 +198,7 @@ function handleTwilio(twilio) {
     let m;
     try { m = JSON.parse(raw.toString()); } catch { return; }
     if (m.event === "media") t.append(m.media.payload);
-    else if (m.event === "start") console.log("Twilio start:", m.start?.callSid || "");
+    else if (m.event === "start") { callSid = m.start?.callSid || null; console.log("Twilio start:", callSid || ""); }
     else if (m.event === "stop") t.commit();
   });
   twilio.on("close", async () => {
@@ -206,7 +207,7 @@ function handleTwilio(twilio) {
     t.close();
     broadcast({ type: "status", value: "ended" });
     broadcast({ type: "call", active: false }); // apaga el aviso global
-    if (fullText.trim()) await saveCall(fullText, lastFields, sensNote); // registro automático
+    if (fullText.trim()) await saveCall(fullText, lastFields, sensNote, callSid); // registro automático
   });
 }
 
@@ -219,7 +220,39 @@ function handleWatch(ws) {
   ws.on("close", () => watchers.delete(ws));
 }
 
-const server = createServer((req, res) => { res.writeHead(426); res.end("WebSocket only"); });
+// ── Callback HTTP de Twilio: la grabación de la llamada ya está lista ──────────
+// Twilio hace POST form-urlencoded (CallSid, RecordingUrl, ...). Enlazamos la
+// grabación a la Anfrage por CallSid vía el dashboard. Esta ruta llega por
+// boscohub.duckdns.org/twilio-recording (Caddy, sin login — Twilio no autentica).
+function handleRecordingCallback(req, res) {
+  let body = "";
+  req.on("data", (c) => { body += c; if (body.length > 1e6) req.destroy(); });
+  req.on("end", async () => {
+    try {
+      const p = new URLSearchParams(body);
+      const callSid = p.get("CallSid");
+      const recordingUrl = p.get("RecordingUrl");
+      if (callSid && recordingUrl) {
+        const url = process.env.DASHBOARD_URL || "http://localhost:3000";
+        await fetch(`${url}/api/live-call/recording`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callSid, recordingUrl }),
+        }).then((r) => console.log("Grabación enlazada:", callSid, r.status))
+          .catch((e) => console.error("recording→dashboard:", e.message));
+      }
+    } catch (e) { console.error("recording callback:", e.message); }
+    res.writeHead(204); // Twilio solo necesita un 2xx
+    res.end();
+  });
+}
+
+const server = createServer((req, res) => {
+  const path = (req.url || "/").split("?")[0];
+  if (req.method === "POST" && path === "/twilio-recording") return handleRecordingCallback(req, res);
+  res.writeHead(426);
+  res.end("WebSocket only");
+});
 const wss = new WebSocketServer({ noServer: true });
 
 server.on("upgrade", (req, socket, head) => {

@@ -89,6 +89,10 @@ services:
       - NODE_ENV=production
       # Para la transcripción de llamadas (Whisper en el endpoint /api/live-call/transcribe).
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Para servir las grabaciones de Twilio (proxy /api/live-call/recording/[id]).
+      # Si faltan, el reproductor responde 503 — no rompe nada más.
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
 
   live-call:
     # Microservicio de transcripción en vivo (Fase 3b). Sin "ports": se accede por
