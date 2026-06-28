@@ -109,6 +109,9 @@ export default function Inbox({ items: initialItems, staff = [], houses = [], me
   // Dringlichkeit: rot, wenn lange offen oder unzugewiesen & alt.
   const urgencyOf = (g) => {
     if (isDone(g)) return "done";
+    // Nicht-Buchungen (Newsletter, Systemmeldungen, allgemeine Mails) lösen NIE
+    // den Buchungs-Watchdog aus — sie sind im Posteingang, aber nie "dringend".
+    if (g.primary.emailType !== "booking") return "normal";
     const wd = g.primary.waitingDays || 0;
     const un = !g.primary.assignedTo;
     if (wd >= 4 || (un && wd >= 2)) return "urgent";
@@ -125,6 +128,7 @@ export default function Inbox({ items: initialItems, staff = [], houses = [], me
   let rows = groups.filter(matchesQuery);
   if (filter === "open") rows = rows.filter((g) => !isDone(g));
   else if (filter === "booking") rows = rows.filter((g) => g.primary.emailType === "booking");
+  else if (filter === "sonstige") rows = rows.filter((g) => g.primary.emailType !== "booking");
   else if (filter === "email") rows = rows.filter((g) => g.primary.channel === "email");
   else if (filter === "phone") rows = rows.filter((g) => g.primary.channel === "phone");
   else if (filter === "unassigned") rows = rows.filter((g) => !g.primary.assignedTo);
@@ -152,6 +156,7 @@ export default function Inbox({ items: initialItems, staff = [], houses = [], me
   const nPhone = groups.filter((g) => g.primary.channel === "phone").length;
   const nUnassigned = groups.filter((g) => !g.primary.assignedTo).length;
   const nBooking = groups.filter((g) => g.primary.emailType === "booking").length;
+  const nOther = groups.filter((g) => g.primary.emailType !== "booking").length;
   const nUrgent = groups.filter((g) => urgencyOf(g) === "urgent").length;
 
   const teamLoad = staff.map((s) => ({ ...s, n: open.filter((g) => g.primary.assignedTo === s.key).length }));
@@ -177,6 +182,7 @@ export default function Inbox({ items: initialItems, staff = [], houses = [], me
     { k: "urgent", tone: "error", icon: "alert", label: "Dringend", val: nUrgent },
     { k: "unassigned", tone: "warn", icon: "flag", label: "Nicht zugewiesen", val: nUnassigned },
     { k: "booking", tone: "success", icon: "bed", label: "Buchungen", val: nBooking },
+    { k: "sonstige", tone: "neutral", icon: "inbox", label: "Sonstige", val: nOther },
   ];
 
   // Eine Anfrage-Karte (wiederverwendet in flacher Liste und Gruppen).
@@ -215,6 +221,8 @@ export default function Inbox({ items: initialItems, staff = [], houses = [], me
               <span style={{ marginLeft: "auto", flexShrink: 0 }}>
                 {done ? (
                   <Pill tone="success">Buchung angelegt</Pill>
+                ) : i.emailType !== "booking" ? (
+                  <Pill tone="neutral" dot={false}>Kein Booking</Pill>
                 ) : multi ? (
                   <Pill tone="burgundy" dot={false}>{g.items.length} Anfragen erkannt</Pill>
                 ) : missing > 0 ? (
@@ -232,7 +240,7 @@ export default function Inbox({ items: initialItems, staff = [], houses = [], me
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
               <span className="db-faint" style={{ fontSize: 12 }}>{i.received}</span>
-              {!done && i.waitingDays >= 2 && (
+              {!done && i.emailType === "booking" && i.waitingDays >= 2 && (
                 <Pill tone={i.waitingDays >= 4 ? "error" : "warn"} dot={false}>
                   <Icon d={I.clock} size={10} /> seit {i.waitingDays} Tagen offen
                 </Pill>
