@@ -8,6 +8,7 @@
 import { Icon, I } from "@/components/icons";
 import HighlightEmail from "@/components/HighlightEmail";
 import TranscriptPlayer from "@/components/TranscriptPlayer";
+import CallRecordingPlayer from "@/components/CallRecordingPlayer";
 import { areaLabel, areaColor, suggestedPerson } from "@/lib/team";
 
 export default function EmailSource({ item, fields, staff = [], activeKey, onMarkHover, legendCompact }) {
@@ -54,12 +55,9 @@ export default function EmailSource({ item, fields, staff = [], activeKey, onMar
 
       {/* Telefon-Aufnahme (echtes Audio von Twilio), falls vorhanden */}
       {isPhone && item.recordingUrl && (
-        <audio
-          controls
-          preload="none"
-          src={`/api/live-call/recording/${item.id}`}
-          style={{ width: "100%", margin: "0 0 10px" }}
-        />
+        <div style={{ margin: "0 0 10px" }}>
+          <CallRecordingPlayer src={`/api/live-call/recording/${item.id}`} />
+        </div>
       )}
       {isPhone && !item.recordingUrl && item.rawBody && (
         <div className="db-faint" style={{ fontSize: 11, margin: "0 0 8px", fontFamily: "var(--db-font-mono)" }}>
