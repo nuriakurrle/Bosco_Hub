@@ -66,8 +66,18 @@ jobs:
         run: |
           SSH="ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=no"
           $SSH ${SSH_USER}@${SSH_HOST} 'mkdir -p /root/Bosco_Hub'
-          tar czf - --exclude=.git --exclude=node_modules --exclude=.next . \
-            | $SSH ${SSH_USER}@${SSH_HOST} 'tar xzf - -C /root/Bosco_Hub'
+          # rsync --delete sincroniza el árbol y BORRA del server los archivos que ya
+          # no existen en git. Antes se usaba tar (solo añadía/sobrescribía), así que un
+          # archivo borrado en git quedaba "fantasma" en el server.
+          # Se PRESERVAN archivos que viven solo en el server: .env (se regenera arriba
+          # con los secretos y va en el origen, no se borra), .env.bak (backup manual) y
+          # live-call/samples (audio demo, git-ignored). .git/node_modules/.next no se
+          # copian (el build es en Docker).
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=no" \
+            --exclude='.git' --exclude='node_modules' --exclude='.next' \
+            --exclude='live-call/samples' --exclude='.env.bak' \
+            ./ ${SSH_USER}@${SSH_HOST}:/root/Bosco_Hub/
 
       - name: Instalar Docker y desplegar
         run: |
