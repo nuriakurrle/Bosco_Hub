@@ -121,9 +121,11 @@ jobs:
             echo "Importando $f..."
             $DC exec -T n8n n8n import:workflow --input=/tmp/$f.json
           done
-          # Publica (activa) los que DEBEN estar activos. v2 (agente tool-calling) se
-          # queda INACTIVO a propósito (es de prueba), por eso NO se publica.
-          $DC exec -T n8n n8n publish:workflow --id=fEejzwIFeoSDGVm6 || true
+          # Intake activo = v2 (agente tool-calling). v1 (prototipo) se DESPUBLICA
+          # para que NO procese el mismo buzón a la vez que v2 (si no, cada correo se
+          # insertaría dos veces). send-email y send-contract siguen activos.
+          $DC exec -T n8n n8n unpublish:workflow --id=fEejzwIFeoSDGVm6 || true
+          $DC exec -T n8n n8n publish:workflow --id=zukemailagentv2 || true
           $DC exec -T n8n n8n publish:workflow --id=zuksendmail00001 || true
           $DC exec -T n8n n8n publish:workflow --id=zuksendcontract1 || true
           echo "Reiniciando n8n para aplicar los cambios..."
@@ -138,9 +140,10 @@ jobs:
           # 2) Verifica que los 3 obligatorios quedaron ACTIVOS; si no, reintenta una vez
           # (activar el trigger de Outlook a veces no engancha al primer reinicio).
           ACTIVOS=$($DC exec -T n8n n8n list:workflow --active=true 2>/dev/null || true)
-          if ! echo "$ACTIVOS" | grep -q fEejzwIFeoSDGVm6 || ! echo "$ACTIVOS" | grep -q zuksendmail00001 || ! echo "$ACTIVOS" | grep -q zuksendcontract1; then
+          if ! echo "$ACTIVOS" | grep -q zukemailagentv2 || ! echo "$ACTIVOS" | grep -q zuksendmail00001 || ! echo "$ACTIVOS" | grep -q zuksendcontract1; then
             echo "Activación incompleta — reintentando..."
-            $DC exec -T n8n n8n publish:workflow --id=fEejzwIFeoSDGVm6 || true
+            $DC exec -T n8n n8n unpublish:workflow --id=fEejzwIFeoSDGVm6 || true
+            $DC exec -T n8n n8n publish:workflow --id=zukemailagentv2 || true
             $DC exec -T n8n n8n publish:workflow --id=zuksendmail00001 || true
             $DC exec -T n8n n8n publish:workflow --id=zuksendcontract1 || true
             $DC restart n8n
@@ -148,9 +151,13 @@ jobs:
             ACTIVOS=$($DC exec -T n8n n8n list:workflow --active=true 2>/dev/null || true)
           fi
           # Falla el deploy (ROJO) si algún workflow obligatorio NO quedó activo.
-          for id in fEejzwIFeoSDGVm6 zuksendmail00001 zuksendcontract1; do
+          for id in zukemailagentv2 zuksendmail00001 zuksendcontract1; do
             echo "$ACTIVOS" | grep -q "$id" || { echo "❌ Workflow $id NO quedó activo."; exit 1; }
           done
+          # Falla el deploy (ROJO) si v1 quedó activo a la vez que v2 (doble inserción).
+          if echo "$ACTIVOS" | grep -q fEejzwIFeoSDGVm6; then
+            echo "❌ El intake v1 (fEejzwIFeoSDGVm6) sigue ACTIVO junto con v2 — riesgo de filas duplicadas."; exit 1;
+          fi
           echo "✓ Workflows activos tras el deploy:"
           echo "$ACTIVOS"
           ENDSSH
