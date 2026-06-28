@@ -71,7 +71,7 @@ export default function TranscriptPlayer({ text, fields = [] }) {
         {segments.map((s, i) => {
           const sp = s.speaker ? speakerSide(s.speaker) : null;
           return (
-            <div key={i} className="tr-seg">
+            <div key={i} className={`tr-seg${sp ? "" : " tr-seg-plain"}`}>
               {sp && (
                 <div className="tr-meta">
                   <div className={`tr-spk ${sp.side}`}>{sp.label}</div>
