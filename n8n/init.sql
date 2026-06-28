@@ -91,6 +91,10 @@ CREATE TABLE IF NOT EXISTS inquiries (
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS email_type TEXT NOT NULL DEFAULT 'booking';
 -- Verpflegung: kann in der Anfrage fehlen (NULL), wird im Dashboard nachgetragen.
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS board_type TEXT;
+-- Telefonie: Twilio CallSid (Verknüpfung zur Aufnahme) + URL der Aufnahme.
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS call_sid TEXT;
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS recording_url TEXT;
+CREATE INDEX IF NOT EXISTS idx_inquiries_call_sid ON inquiries (call_sid);
 
 CREATE INDEX IF NOT EXISTS idx_inquiries_status     ON inquiries (tracker_status);
 CREATE INDEX IF NOT EXISTS idx_inquiries_received   ON inquiries (received_at DESC);

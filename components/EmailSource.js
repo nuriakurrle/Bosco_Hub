@@ -52,6 +52,16 @@ export default function EmailSource({ item, fields, staff = [], activeKey, onMar
         </div>
       )}
 
+      {/* Telefon-Aufnahme (echtes Audio von Twilio), falls vorhanden */}
+      {isPhone && item.recordingUrl && (
+        <audio
+          controls
+          preload="none"
+          src={`/api/live-call/recording/${item.id}`}
+          style={{ width: "100%", margin: "0 0 10px" }}
+        />
+      )}
+
       {/* Body — Telefon: abspielbares Transkript; E-Mail: markierter Text */}
       {usePlayer ? (
         <TranscriptPlayer text={item.rawBody} fields={fields} />
