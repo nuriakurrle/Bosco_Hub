@@ -1,13 +1,34 @@
 # Caddyfile — Proxy inverso con HTTPS automático (certificados Let's Encrypt gratis).
 # Caddy saca y renueva los certificados solo; no hay que tocar nada.
 
-# Dashboard del equipo, protegido con login (usuario: bosco).
 boscohub.duckdns.org {
-	# Pide usuario y contraseña antes de mostrar el dashboard.
-	basic_auth {
-		bosco $2a$14$RJxJbVR69XWbhbHpQK.OC.04jjafevgrNU5J/YpMNMlUTP23J4ZtK
+	# /twilio, /watch y /twilio-recording -> microservicio de llamadas (WebSocket
+	# + callback HTTP de grabación), SIN login. Twilio y la consola se conectan por
+	# aquí porque el subdominio live. NO resuelve fiable en DNS público (DuckDNS no
+	# sirve subdominios).
+	handle /twilio {
+		reverse_proxy live-call:8787
 	}
-	reverse_proxy dashboard:3000
+	# /watch lo abre el navegador del staff, que YA está autenticado en el dashboard.
+	# Exigimos las mismas credenciales aquí para que nadie de fuera pueda escuchar
+	# las transcripciones en curso (DSGVO). Twilio NO pasa por aquí, solo el staff.
+	handle /watch {
+		basic_auth {
+			bosco $2a$14$RJxJbVR69XWbhbHpQK.OC.04jjafevgrNU5J/YpMNMlUTP23J4ZtK
+		}
+		reverse_proxy live-call:8787
+	}
+	# Callback HTTP de Twilio cuando la grabación de la llamada está lista.
+	handle /twilio-recording {
+		reverse_proxy live-call:8787
+	}
+	# El resto: el dashboard, protegido con login (usuario: bosco).
+	handle {
+		basic_auth {
+			bosco $2a$14$RJxJbVR69XWbhbHpQK.OC.04jjafevgrNU5J/YpMNMlUTP23J4ZtK
+		}
+		reverse_proxy dashboard:3000
+	}
 }
 
 # Panel de n8n (ya trae su propio login básico).
@@ -15,8 +36,8 @@ n8n.boscohub.duckdns.org {
 	reverse_proxy n8n:5678
 }
 
-# Microservicio de transcripción en vivo (WebSocket, Fase 3b).
-# Caddy gestiona el WebSocket y el HTTPS automáticamente.
+# Se mantiene por compatibilidad, pero NO resuelve fiable en DNS; el tráfico real
+# va por boscohub.duckdns.org/twilio, /watch y /twilio-recording.
 live.boscohub.duckdns.org {
 	reverse_proxy live-call:8787
 }

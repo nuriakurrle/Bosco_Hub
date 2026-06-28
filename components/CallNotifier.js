@@ -7,12 +7,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Misma regla que LiveCall: ws://localhost en dev, wss://live.<dominio> en prod.
+// Misma regla que LiveCall: ws://localhost en dev, mismo dominio que el dashboard
+// en prod (Caddy enruta /watch al microservicio; NO se usa el subdominio live.).
 function liveWsUrl() {
   if (typeof window === "undefined") return "ws://localhost:8787";
   const h = window.location.hostname;
   if (h === "localhost" || h === "127.0.0.1") return "ws://localhost:8787";
-  return `wss://live.${window.location.host}`;
+  return `wss://${window.location.host}`;
 }
 
 export default function CallNotifier() {

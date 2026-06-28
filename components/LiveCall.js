@@ -26,12 +26,14 @@ const FIELDS = [
 const SPK_LABEL = { staff: "Mitarbeiter", caller: "Anrufer" };
 
 // URL del microservicio de transcripción en vivo (Fase 3b).
-// En local: ws://localhost:8787. En producción: wss://live.<dominio> (vía Caddy).
+// En local: ws://localhost:8787. En producción: MISMO dominio que el dashboard
+// (Caddy enruta /watch y /twilio al microservicio). NO se usa el subdominio live.
+// porque DuckDNS no sirve subdominios de forma fiable.
 function liveWsUrl() {
   if (typeof window === "undefined") return "ws://localhost:8787";
   const h = window.location.hostname;
   if (h === "localhost" || h === "127.0.0.1") return "ws://localhost:8787";
-  return `wss://live.${window.location.host}`;
+  return `wss://${window.location.host}`;
 }
 
 // Construye un regex tolerante a partir de un término (cita o valor):
