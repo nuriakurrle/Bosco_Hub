@@ -1,70 +1,150 @@
 {
   "id": "zukemailagentv2",
-  "name": "ZUK - Email Intake Agent v2 (tool-calling, TEST)",
+  "name": "ZUK - Email Intake Agent v2 (tool-calling)",
   "active": false,
   "settings": { "executionOrder": "v1" },
+  "pinData": {},
   "nodes": [
+    {
+      "parameters": {
+        "pollTimes": { "item": [ { "mode": "everyMinute" } ] },
+        "fetchType": "all",
+        "filters": {},
+        "options": {}
+      },
+      "id": "node-outlook-trigger",
+      "name": "New Email (Outlook Trigger)",
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [0, 300],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": { "id": "RMRz9wntFr8TCs3X", "name": "Microsoft Outlook account" }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/me/messages/{{ $json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftOutlookOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Prefer", "value": "outlook.body-content-type=\"text\"" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-get-full-email",
+      "name": "Get Full Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 300],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": { "id": "RMRz9wntFr8TCs3X", "name": "Microsoft Outlook account" }
+      }
+    },
     {
       "parameters": {},
       "id": "node-manual",
       "name": "Manual Trigger (Test)",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [0, 0]
+      "position": [0, 560]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Test-Eingabe: simuliert eine vollstaendige Outlook/Graph-Nachricht,\n// damit der Manual-Trigger exakt denselben Pfad wie eine echte E-Mail nimmt.\n// Enthaelt absichtlich eine Allergie, um contains_sensitive_data zu testen.\nreturn [{\n  json: {\n    id: 'test-message-001',\n    subject: 'Anfrage Orientierungstage Mai',\n    conversationId: 'test-conversation-001',\n    from: { emailAddress: { address: 'frau.berger@gym-sankt-anna.de', name: 'Frau Berger' } },\n    toRecipients: [ { emailAddress: { address: 'aktionszentrum@dbjw.de' } } ],\n    bodyPreview: 'Guten Tag, hier Frau Berger vom Gymnasium Sankt Anna...',\n    body: { contentType: 'text', content: 'Guten Tag, hier Frau Berger vom Gymnasium Sankt Anna. Wir moechten Orientierungstage vom 12. bis 14. Mai mit 25 Schuelern und 2 Lehrern, achte Klasse. Ein Kind ist Vegetarier und ein Schueler hat eine Erdnussallergie. Viele Gruesse' }\n  }\n}];"
+      },
+      "id": "node-sample",
+      "name": "Sample Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 560]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "a1", "name": "from", "type": "string", "value": "frau.berger@gym-sankt-anna.de" },
-            { "id": "a2", "name": "subject", "type": "string", "value": "Anfrage Orientierungstage Mai" },
-            { "id": "a3", "name": "body", "type": "string", "value": "Guten Tag, hier Frau Berger vom Gymnasium Sankt Anna. Wir moechten Orientierungstage vom 12. bis 14. Mai mit 25 Schuelern und 2 Lehrern, achte Klasse. Ein Kind ist Vegetarier. Viele Gruesse" }
+            {
+              "id": "f-from",
+              "name": "from",
+              "value": "={{ $json.from?.emailAddress?.address || $json.from?.address || $json.from }}",
+              "type": "string"
+            },
+            {
+              "id": "f-to",
+              "name": "to",
+              "value": "={{ Array.isArray($json.to) ? $json.to.join(', ') : ($json.to || ($json.toRecipients || []).map(r => r.emailAddress?.address).join(', ')) }}",
+              "type": "string"
+            },
+            {
+              "id": "f-subject",
+              "name": "subject",
+              "value": "={{ $json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "f-body",
+              "name": "body",
+              "value": "={{ (($json.body?.content || $json.bodyPreview) || '').replace(new RegExp('<(mailto:|https?://)[^>]*>', 'g'), '') }}",
+              "type": "string"
+            },
+            {
+              "id": "f-msgid",
+              "name": "messageId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "f-convid",
+              "name": "conversationId",
+              "value": "={{ $json.conversationId }}",
+              "type": "string"
+            }
           ]
         },
         "options": {}
       },
-      "id": "node-sample",
-      "name": "Sample Email",
+      "id": "node-normalize",
+      "name": "Normalize Email Fields",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [220, 0]
+      "position": [460, 420]
     },
     {
       "parameters": {
-        "promptType": "define",
-        "text": "=Du bist der Intake-Agent des Buchungsteams im Kloster Benediktbeuern (Don Bosco). Aus einer eingehenden E-Mail extrahierst du ALLE Buchungsanfragen (eine E-Mail kann mehrere enthalten). Nur klar buchungsfremde Mails (Newsletter, OneDrive-Benachrichtigungen, Abwesenheitsnotizen, Spam) -> request_count 0.\n\nNutze deine WERKZEUGE, bevor du antwortest:\n1) 'Customer Lookup' mit dem Schulnamen, um zu pruefen, ob die Schule bereits bekannt ist (Stammkunde). Setze is_returning_customer entsprechend.\n2) 'Duplicate Check' mit dem Schulnamen, um zu pruefen, ob bereits eine passende Anfrage existiert. Wenn ja, setze possible_duplicate_id auf die gefundene id.\n\nFelder je Anfrage: school_name, contact_person, program_type, house, date_range, number_of_people, grade_level, special_requirements. Routing: Schullandheim -> Jugendherberge; Orientierungs-/Besinnungstage -> Aktionszentrum. Regeln: number_of_people = Schueler und Begleitpersonen GETRENNT angeben (z. B. '25 + 2 Lehrer'), NICHT addieren. date_range = als TT.MM.JJJJ normalisieren; wenn kein Jahr genannt wird, das naechste zukuenftige Jahr annehmen. missing_fields: fehlende Pflichtfelder (date_range, number_of_people, program_type, school_name). status: 'needs_info' wenn Pflichtfelder fehlen, sonst 'ready_for_review'. email_type: 'booking' fuer Buchungsanfragen, 'other' fuer sonstige (nicht-Buchungs-) Mails.\n\nE-MAIL\nVon: {{ $json.from }}\nBetreff: {{ $json.subject }}\nText: {{ $json.body }}",        "hasOutputParser": true,
-        "options": {}
+        "jsCode": "// Pre-classify which house / responsible area the email belongs to,\n// based on the address it was sent to. This mirrors how the ZUK team\n// already uses the old mailbox addresses as a routing signal.\n\nconst to = ($json.to || '').toLowerCase();\n\nlet houseHint = 'unknown';\nlet responsibleArea = 'unassigned';\n\nif (to.includes('jugendherberge') || (to.includes('info') && to.includes('dboe'))) {\n  houseHint = 'Jugendherberge';\n  responsibleArea = 'Jugendherberge bookings';\n} else if (to.includes('streidel') || to.includes('aktionszentrum')) {\n  houseHint = 'Aktionszentrum';\n  responsibleArea = 'Aktionszentrum bookings';\n}\n\nreturn [{\n  json: {\n    ...$json,\n    house_hint: houseHint,\n    responsible_area: responsibleArea\n  }\n}];"
       },
-      "id": "node-agent",
-      "name": "Intake Agent",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [460, 0]
+      "id": "node-routing",
+      "name": "Detect Routing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 420]
     },
     {
       "parameters": {
-        "model": { "__rl": true, "mode": "list", "value": "gpt-4o", "cachedResultName": "gpt-4o" },
-        "options": {}
+        "model": { "__rl": true, "value": "gpt-4o", "mode": "list", "cachedResultName": "gpt-4o" },
+        "options": { "temperature": 0 }
       },
       "id": "node-model",
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
-      "position": [320, 220],
+      "position": [820, 640],
       "credentials": {
         "openAiApi": { "id": "KNbs9IV7QsyP8Jem", "name": "OpenAI account" }
       }
     },
     {
       "parameters": {
-        "schemaType": "fromJson",
-        "jsonSchemaExample": "{\n  \"request_count\": 1,\n  \"requests\": [\n    {\n      \"school_name\": \"Gymnasium Sankt Anna\",\n      \"contact_person\": \"Frau Berger\",\n      \"program_type\": \"Orientierungstage\",\n      \"house\": \"Aktionszentrum\",\n      \"date_range\": \"12.05.2027 - 14.05.2027\",\n      \"number_of_people\": \"25 + 2 Lehrer\",\n      \"grade_level\": \"8\",\n      \"special_requirements\": \"1 Vegetarier\",\n      \"missing_fields\": \"\",\n      \"status\": \"ready_for_review\",\n      \"email_type\": \"booking\",\n      \"is_returning_customer\": false,\n      \"possible_duplicate_id\": null\n    }\n  ]\n}"
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"request_count\": { \"type\": \"number\" },\n    \"summary\": { \"type\": \"string\" },\n    \"requests\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"school_name\": { \"type\": \"string\" },\n          \"contact_person\": { \"type\": \"string\" },\n          \"program_type\": { \"type\": \"string\" },\n          \"house\": { \"type\": \"string\" },\n          \"date_range\": { \"type\": \"string\" },\n          \"number_of_people\": { \"type\": \"string\" },\n          \"grade_level\": { \"type\": \"string\" },\n          \"special_requirements\": { \"type\": \"string\" },\n          \"missing_fields\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"status\": { \"type\": \"string\" },\n          \"contains_sensitive_data\": { \"type\": \"boolean\" },\n          \"sensitive_data_note\": { \"type\": \"string\" },\n          \"email_type\": { \"type\": \"string\", \"enum\": [\"booking\", \"other\"] },\n          \"is_returning_customer\": { \"type\": \"boolean\" },\n          \"possible_duplicate_id\": { \"type\": [\"number\", \"null\"] }\n        },\n        \"required\": [\"status\", \"missing_fields\", \"contains_sensitive_data\", \"email_type\"]\n      }\n    }\n  },\n  \"required\": [\"requests\", \"request_count\"]\n}"
       },
       "id": "node-parser",
       "name": "Structured Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
-      "position": [600, 220]
+      "position": [980, 640]
     },
     {
       "parameters": {
@@ -76,7 +156,7 @@
       "name": "Customer Lookup",
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [780, 220],
+      "position": [1140, 640],
       "credentials": {
         "postgres": { "id": "bjtHqY4LrBLXQHrN", "name": "Postgres account" }
       }
@@ -91,18 +171,292 @@
       "name": "Duplicate Check",
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [960, 220],
+      "position": [1300, 640],
+      "credentials": {
+        "postgres": { "id": "bjtHqY4LrBLXQHrN", "name": "Postgres account" }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Du bist der Intake-Agent des Buchungsteams im Kloster Benediktbeuern (Don Bosco Jugendwerk). Eingehende E-Mails kommen von Lehrkraeften und Gruppenleitungen, meist auf Deutsch, und fragen Aufenthalte fuer Schulklassen und Jugendgruppen an.\n\nNUTZE ZUERST DEINE WERKZEUGE, bevor du antwortest:\n1) 'Customer Lookup' mit dem Schulnamen: prueft, ob die Schule schon bekannt ist (Stammkunde). Wenn prior_inquiries > 0, setze is_returning_customer = true, sonst false.\n2) 'Duplicate Check' mit dem Schulnamen: prueft, ob bereits eine passende Anfrage existiert. Nur wenn eine eindeutig passende gefunden wird (gleiche Schule, ueberlappender Zeitraum), setze possible_duplicate_id auf deren id, sonst null.\n\nKLASSIFIZIERUNG: Die meisten Mails sind Buchungsanfragen (email_type 'booking'). Extrahiere JEDE einzelne Buchungsanfrage — eine Mail kann mehrere enthalten (z. B. verschiedene Termine oder Klassen); behandle jede als eigene Anfrage. Eine echte, menschliche Mail, die KEINE Buchung ist (Frage, Antwort, Stornierung, allgemeine Korrespondenz), ist trotzdem relevant: gib GENAU EINE Anfrage mit email_type 'other', status 'needs_info', leerem missing_fields und leeren Buchungsfeldern zurueck. Nur reines Rauschen (automatische Systemmeldungen wie OneDrive-/SharePoint-Freigaben, Kalendereinladungen, Newsletter, Abwesenheitsnotizen, Zustell-/Lesebestaetigungen, Spam) wird uebersprungen: request_count 0, leeres requests-Array, nichts erfinden. Im Zweifel 'booking'.\n\nFELDER je Anfrage: school_name, contact_person, program_type, house, date_range, number_of_people, grade_level, special_requirements.\nROUTING (house): Schullandheim -> Jugendherberge; Orientierungstage/Besinnungstage -> Aktionszentrum. Nutze house_hint, wenn der Text mehrdeutig ist. Leer lassen, wenn nicht erkennbar.\nREGELN: number_of_people = Schueler und Begleitpersonen GETRENNT angeben (z. B. '25 + 2 Lehrer'), NICHT addieren. date_range als TT.MM.JJJJ normalisieren; ohne Jahresangabe das naechste zukuenftige Jahr annehmen.\nmissing_fields: fehlende Pflichtfelder als Liste. Pflichtfelder sind date_range, number_of_people, program_type und school_name.\nstatus: 'complete' nur wenn date_range, number_of_people UND program_type vorhanden sind, sonst 'needs_info'.\ncontains_sensitive_data: true, wenn Gesundheit, psychische Gesundheit, Allergien mit Personenbezug oder andere DSGVO-Sonderkategorien (Art. 9) genannt werden.\nsensitive_data_note: kurz die erkannte Kategorie auf Deutsch beschreiben — NIE die sensiblen Details woertlich zitieren. Sonst leer lassen.\n\nSUMMARY (Feld summary, auf Deutsch, fuer das Team): kurze Zusammenfassung der Mail. Wenn is_returning_customer true ist, beginne die summary mit '⭐ Stammkunde. '. Wenn possible_duplicate_id gesetzt ist, fuege '⚠️ Moegliche Dublette (#<id>). ' hinzu.\n\nGib ausserdem request_count zurueck. Erfinde nie Informationen, die nicht in der Mail stehen.\n\nE-MAIL-METADATEN\nVon: {{ $json.from }}\nGesendet an: {{ $json.to }}\nBetreff: {{ $json.subject }}\nHouse-Hint aus Adresse: {{ $json.house_hint }}\n\nE-MAIL-TEXT\n{{ $json.body }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "id": "node-agent",
+      "name": "Intake Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [920, 420]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.requests",
+        "options": {}
+      },
+      "id": "node-split",
+      "name": "Split Requests",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1180, 420]
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ctx-from",
+              "name": "customer_email",
+              "value": "={{ $('Normalize Email Fields').item.json.from }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx-subject",
+              "name": "original_subject",
+              "value": "={{ $('Normalize Email Fields').item.json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx-thread",
+              "name": "conversation_id",
+              "value": "={{ $('Normalize Email Fields').item.json.conversationId }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx-area",
+              "name": "responsible_area",
+              "value": "={{ $('Detect Routing').item.json.responsible_area }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx-rawbody",
+              "name": "raw_body",
+              "value": "={{ $('Normalize Email Fields').item.json.body }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx-channel",
+              "name": "channel",
+              "value": "email",
+              "type": "string"
+            },
+            {
+              "id": "ctx-summary",
+              "name": "summary",
+              "value": "={{ $('Intake Agent').item.json.output.summary }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-context",
+      "name": "Add Email Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1400, 420]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-status",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "complete",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-if",
+      "name": "Is Info Complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1620, 420]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": { "__rl": true, "value": "public", "mode": "list", "cachedResultName": "public" },
+        "table": { "__rl": true, "value": "inquiries", "mode": "list", "cachedResultName": "inquiries" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "tracker_status": "ready_for_review",
+            "responsible_area": "={{ $json.responsible_area }}",
+            "customer_email": "={{ $json.customer_email }}",
+            "original_subject": "={{ $json.original_subject }}",
+            "conversation_id": "={{ $json.conversation_id }}",
+            "school_name": "={{ $json.school_name }}",
+            "contact_person": "={{ $json.contact_person }}",
+            "program_type": "={{ $json.program_type }}",
+            "house": "={{ $json.house }}",
+            "date_range": "={{ $json.date_range }}",
+            "number_of_people": "={{ $json.number_of_people }}",
+            "grade_level": "={{ $json.grade_level }}",
+            "special_requirements": "={{ $json.special_requirements }}",
+            "missing_fields": "={{ ($json.missing_fields || []).join(', ') }}",
+            "contains_sensitive_data": "={{ $json.contains_sensitive_data }}",
+            "sensitive_data_note": "={{ $json.sensitive_data_note }}",
+            "channel": "={{ $json.channel }}",
+            "summary": "={{ $json.summary }}",
+            "raw_body": "={{ $json.raw_body }}",
+            "email_type": "={{ $json.email_type || 'booking' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "tracker_status", "displayName": "tracker_status", "required": true, "type": "string" },
+            { "id": "responsible_area", "displayName": "responsible_area", "required": false, "type": "string" },
+            { "id": "customer_email", "displayName": "customer_email", "required": false, "type": "string" },
+            { "id": "original_subject", "displayName": "original_subject", "required": false, "type": "string" },
+            { "id": "conversation_id", "displayName": "conversation_id", "required": false, "type": "string" },
+            { "id": "school_name", "displayName": "school_name", "required": false, "type": "string" },
+            { "id": "contact_person", "displayName": "contact_person", "required": false, "type": "string" },
+            { "id": "program_type", "displayName": "program_type", "required": false, "type": "string" },
+            { "id": "house", "displayName": "house", "required": false, "type": "string" },
+            { "id": "date_range", "displayName": "date_range", "required": false, "type": "string" },
+            { "id": "number_of_people", "displayName": "number_of_people", "required": false, "type": "string" },
+            { "id": "grade_level", "displayName": "grade_level", "required": false, "type": "string" },
+            { "id": "special_requirements", "displayName": "special_requirements", "required": false, "type": "string" },
+            { "id": "missing_fields", "displayName": "missing_fields", "required": false, "type": "string" },
+            { "id": "contains_sensitive_data", "displayName": "contains_sensitive_data", "required": false, "type": "boolean" },
+            { "id": "sensitive_data_note", "displayName": "sensitive_data_note", "required": false, "type": "string" },
+            { "id": "channel", "displayName": "channel", "required": false, "type": "string" },
+            { "id": "summary", "displayName": "summary", "required": false, "type": "string" },
+            { "id": "raw_body", "displayName": "raw_body", "required": false, "type": "string" },
+            { "id": "email_type", "displayName": "email_type", "required": false, "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-pg-ready",
+      "name": "Insert: Ready for Review",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1840, 300],
+      "credentials": {
+        "postgres": { "id": "bjtHqY4LrBLXQHrN", "name": "Postgres account" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": { "__rl": true, "value": "public", "mode": "list", "cachedResultName": "public" },
+        "table": { "__rl": true, "value": "inquiries", "mode": "list", "cachedResultName": "inquiries" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "tracker_status": "needs_info",
+            "responsible_area": "={{ $json.responsible_area }}",
+            "customer_email": "={{ $json.customer_email }}",
+            "original_subject": "={{ $json.original_subject }}",
+            "conversation_id": "={{ $json.conversation_id }}",
+            "school_name": "={{ $json.school_name }}",
+            "contact_person": "={{ $json.contact_person }}",
+            "program_type": "={{ $json.program_type }}",
+            "house": "={{ $json.house }}",
+            "date_range": "={{ $json.date_range }}",
+            "number_of_people": "={{ $json.number_of_people }}",
+            "grade_level": "={{ $json.grade_level }}",
+            "special_requirements": "={{ $json.special_requirements }}",
+            "missing_fields": "={{ ($json.missing_fields || []).join(', ') }}",
+            "contains_sensitive_data": "={{ $json.contains_sensitive_data }}",
+            "sensitive_data_note": "={{ $json.sensitive_data_note }}",
+            "channel": "={{ $json.channel }}",
+            "summary": "={{ $json.summary }}",
+            "raw_body": "={{ $json.raw_body }}",
+            "email_type": "={{ $json.email_type || 'booking' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "tracker_status", "displayName": "tracker_status", "required": true, "type": "string" },
+            { "id": "responsible_area", "displayName": "responsible_area", "required": false, "type": "string" },
+            { "id": "customer_email", "displayName": "customer_email", "required": false, "type": "string" },
+            { "id": "original_subject", "displayName": "original_subject", "required": false, "type": "string" },
+            { "id": "conversation_id", "displayName": "conversation_id", "required": false, "type": "string" },
+            { "id": "school_name", "displayName": "school_name", "required": false, "type": "string" },
+            { "id": "contact_person", "displayName": "contact_person", "required": false, "type": "string" },
+            { "id": "program_type", "displayName": "program_type", "required": false, "type": "string" },
+            { "id": "house", "displayName": "house", "required": false, "type": "string" },
+            { "id": "date_range", "displayName": "date_range", "required": false, "type": "string" },
+            { "id": "number_of_people", "displayName": "number_of_people", "required": false, "type": "string" },
+            { "id": "grade_level", "displayName": "grade_level", "required": false, "type": "string" },
+            { "id": "special_requirements", "displayName": "special_requirements", "required": false, "type": "string" },
+            { "id": "missing_fields", "displayName": "missing_fields", "required": false, "type": "string" },
+            { "id": "contains_sensitive_data", "displayName": "contains_sensitive_data", "required": false, "type": "boolean" },
+            { "id": "sensitive_data_note", "displayName": "sensitive_data_note", "required": false, "type": "string" },
+            { "id": "channel", "displayName": "channel", "required": false, "type": "string" },
+            { "id": "summary", "displayName": "summary", "required": false, "type": "string" },
+            { "id": "raw_body", "displayName": "raw_body", "required": false, "type": "string" },
+            { "id": "email_type", "displayName": "email_type", "required": false, "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-pg-needsinfo",
+      "name": "Insert: Needs Info",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1840, 540],
       "credentials": {
         "postgres": { "id": "bjtHqY4LrBLXQHrN", "name": "Postgres account" }
       }
     }
   ],
   "connections": {
-    "Manual Trigger (Test)": { "main": [[ { "node": "Sample Email", "type": "main", "index": 0 } ]] },
-    "Sample Email": { "main": [[ { "node": "Intake Agent", "type": "main", "index": 0 } ]] },
-    "OpenAI Chat Model": { "ai_languageModel": [[ { "node": "Intake Agent", "type": "ai_languageModel", "index": 0 } ]] },
-    "Structured Output Parser": { "ai_outputParser": [[ { "node": "Intake Agent", "type": "ai_outputParser", "index": 0 } ]] },
-    "Customer Lookup": { "ai_tool": [[ { "node": "Intake Agent", "type": "ai_tool", "index": 0 } ]] },
-    "Duplicate Check": { "ai_tool": [[ { "node": "Intake Agent", "type": "ai_tool", "index": 0 } ]] }
+    "New Email (Outlook Trigger)": {
+      "main": [[ { "node": "Get Full Email", "type": "main", "index": 0 } ]]
+    },
+    "Get Full Email": {
+      "main": [[ { "node": "Normalize Email Fields", "type": "main", "index": 0 } ]]
+    },
+    "Manual Trigger (Test)": {
+      "main": [[ { "node": "Sample Email", "type": "main", "index": 0 } ]]
+    },
+    "Sample Email": {
+      "main": [[ { "node": "Normalize Email Fields", "type": "main", "index": 0 } ]]
+    },
+    "Normalize Email Fields": {
+      "main": [[ { "node": "Detect Routing", "type": "main", "index": 0 } ]]
+    },
+    "Detect Routing": {
+      "main": [[ { "node": "Intake Agent", "type": "main", "index": 0 } ]]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [[ { "node": "Intake Agent", "type": "ai_languageModel", "index": 0 } ]]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [[ { "node": "Intake Agent", "type": "ai_outputParser", "index": 0 } ]]
+    },
+    "Customer Lookup": {
+      "ai_tool": [[ { "node": "Intake Agent", "type": "ai_tool", "index": 0 } ]]
+    },
+    "Duplicate Check": {
+      "ai_tool": [[ { "node": "Intake Agent", "type": "ai_tool", "index": 0 } ]]
+    },
+    "Intake Agent": {
+      "main": [[ { "node": "Split Requests", "type": "main", "index": 0 } ]]
+    },
+    "Split Requests": {
+      "main": [[ { "node": "Add Email Context", "type": "main", "index": 0 } ]]
+    },
+    "Add Email Context": {
+      "main": [[ { "node": "Is Info Complete?", "type": "main", "index": 0 } ]]
+    },
+    "Is Info Complete?": {
+      "main": [
+        [ { "node": "Insert: Ready for Review", "type": "main", "index": 0 } ],
+        [ { "node": "Insert: Needs Info", "type": "main", "index": 0 } ]
+      ]
+    }
   }
 }
