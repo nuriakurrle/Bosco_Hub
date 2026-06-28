@@ -89,6 +89,8 @@ CREATE TABLE IF NOT EXISTS inquiries (
 
 -- Für bestehende Datenbanken (CREATE TABLE läuft nur beim ersten Start).
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS email_type TEXT NOT NULL DEFAULT 'booking';
+-- Verpflegung: kann in der Anfrage fehlen (NULL), wird im Dashboard nachgetragen.
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS board_type TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_inquiries_status     ON inquiries (tracker_status);
 CREATE INDEX IF NOT EXISTS idx_inquiries_received   ON inquiries (received_at DESC);
@@ -183,6 +185,8 @@ CREATE INDEX IF NOT EXISTS idx_notes_school  ON notes (school_name);
 -- ----------------------------------------------------------------
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_status  TEXT NOT NULL DEFAULT 'draft';
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_sent_at TIMESTAMPTZ;
+-- Verpflegung der Buchung (aus der Anfrage übernommen → Küchenplan).
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS board_type TEXT;
 -- Angepasster Vertragstext (NULL = aus Buchungsdaten generieren, sonst der
 -- im Dashboard bearbeitete und gespeicherte Entwurf).
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS contract_text    TEXT;
