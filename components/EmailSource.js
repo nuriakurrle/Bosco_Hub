@@ -61,6 +61,11 @@ export default function EmailSource({ item, fields, staff = [], activeKey, onMar
           style={{ width: "100%", margin: "0 0 10px" }}
         />
       )}
+      {isPhone && !item.recordingUrl && item.rawBody && (
+        <div className="db-faint" style={{ fontSize: 11, margin: "0 0 8px", fontFamily: "var(--db-font-mono)" }}>
+          Keine Tonaufnahme für dieses Gespräch — nur Transkript.
+        </div>
+      )}
 
       {/* Body — Telefon: abspielbares Transkript; E-Mail: markierter Text */}
       {usePlayer ? (

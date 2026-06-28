@@ -1720,6 +1720,9 @@ a { color: inherit; text-decoration: none; }
 
 .transcript { display: flex; flex-direction: column; gap: 2px; max-height: 420px; overflow-y: auto; }
 .tr-seg { display: grid; grid-template-columns: 52px 1fr; gap: 8px; padding: 8px; border-radius: 6px; cursor: pointer; transition: background .1s; }
+/* Transkript ohne Sprecher-Marken (z. B. Twilio, keine Diarisierung): volle Breite,
+   damit der Text nicht in die schmale 52px-Spalte gequetscht wird. */
+.tr-seg-plain { grid-template-columns: 1fr; }
 .tr-seg:hover { background: var(--db-paper-2); }
 .tr-seg.current { background: var(--db-primary-tint); }
 .tr-meta { text-align: right; }
